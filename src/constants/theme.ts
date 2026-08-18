@@ -1,6 +1,9 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Studium's brand tokens, ported from the web app (studium-website) so the
+ * phone app looks like the same product, not a generic template. Every
+ * screen should read colors from here — never a hardcoded hex in a
+ * component — so light/dark mode and any future brand tweak stay
+ * consistent app-wide.
  */
 
 import '@/global.css';
@@ -9,18 +12,45 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    // Base surfaces
+    text: '#0F172A', // matches the web's "heading" ink
+    textSecondary: '#64748B', // slate-500
+    background: '#F8FAFC', // the web dashboard's own page background
+    backgroundElement: '#FFFFFF', // card surface
+    backgroundSelected: '#ECFDF5', // teal-tinted selected/active background
+    border: 'rgba(15, 23, 42, 0.08)',
+
+    // Brand
+    primary: '#0F8B8D', // Studium teal — icons, badges, links, secondary CTAs
+    primaryMuted: '#E6F4F1', // teal-tinted card/badge background
+    accent: '#047857', // primary CTA buttons ("Resume", "Start Studying")
+
+    // Status
+    amber: '#D97706', // streak/flame
+    amberMuted: '#FEF3C7',
+    rose: '#E11D48', // unfamiliar / needs-review / destructive
+    roseMuted: '#FFE4E6',
+
+    white: '#FFFFFF',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#FFFFFF',
+    textSecondary: '#94A3B8', // slate-400
+    background: '#070D0C',
+    backgroundElement: '#0D1917',
+    backgroundSelected: 'rgba(15, 139, 141, 0.15)',
+    border: 'rgba(255, 255, 255, 0.10)',
+
+    primary: '#2DD4BF', // teal-400 — lighter than light-mode primary for contrast on near-black
+    primaryMuted: 'rgba(15, 139, 141, 0.16)',
+    accent: '#34D399', // emerald-400
+
+    amber: '#FBBF24',
+    amberMuted: 'rgba(217, 119, 6, 0.16)',
+    rose: '#FB7185',
+    roseMuted: 'rgba(225, 29, 72, 0.16)',
+
+    white: '#FFFFFF',
   },
 } as const;
 
@@ -59,6 +89,15 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+// 8dp-rhythm radii, used the same way across every card/pill/button so
+// rounding reads as one consistent system rather than ad-hoc per component.
+export const Radius = {
+  sm: 12,
+  md: 16,
+  lg: 24,
+  pill: 999,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
