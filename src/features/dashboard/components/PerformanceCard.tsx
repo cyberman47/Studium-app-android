@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
+import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -45,12 +46,7 @@ export function PerformanceCard({
   return (
     <Card>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="stats-chart" size={13} color={theme.primary} />
-          <ThemedText themeColor="textSecondary" style={styles.headerText}>
-            YOUR PERFORMANCE
-          </ThemedText>
-        </View>
+        <EyebrowPill emoji="📈" label="Your Performance" />
       </View>
 
       <View style={styles.levelRow}>
@@ -91,18 +87,7 @@ export function PerformanceCard({
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: Spacing.three,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  headerText: {
-    fontSize: 11,
-    fontWeight: '800',
   },
   levelRow: {
     flexDirection: 'row',

@@ -93,10 +93,12 @@ export const Spacing = {
 
 // 8dp-rhythm radii, used the same way across every card/pill/button so
 // rounding reads as one consistent system rather than ad-hoc per component.
+// `lg` matches the web dashboard's own card radius exactly (cardClass in
+// app/dashboard/(main)/page.tsx uses Tailwind's rounded-3xl, i.e. 24px).
 export const Radius = {
   sm: 12,
   md: 14,
-  lg: 20,
+  lg: 24,
   pill: 999,
 } as const;
 

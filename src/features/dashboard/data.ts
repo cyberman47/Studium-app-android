@@ -19,6 +19,7 @@ export type LeaderboardRow = {
 export type DashboardData = {
   name: string;
   pathLabel: string;
+  pathEmoji: string;
   streakDays: number;
   totalKP: number;
   todayKP: number;
@@ -34,6 +35,8 @@ export type DashboardData = {
 export const mockDashboard: DashboardData = {
   name: 'Alex',
   pathLabel: 'MCAT',
+  // Matches lib/currentPath.ts's pathEmoji map on the web (mcat: '🧬').
+  pathEmoji: '🧬',
   streakDays: 12,
   totalKP: 2840,
   todayKP: 35,

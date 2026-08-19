@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
+import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 function getGreeting(): string {
@@ -12,24 +12,39 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-export function GreetingHeader({ name, pathLabel }: { name: string; pathLabel: string }) {
+// Matches app/dashboard/(main)/page.tsx's own greeting row: the shared
+// `.eyebrow` teal pill + bold greeting on the left, and the current
+// learning-path badge on the right — white card surface with a hairline
+// border and soft shadow, heading-colored text, the path's own emoji
+// (lib/currentPath.ts's pathEmoji map), no icon or chevron, since on the
+// real page this exact badge is a static indicator, not the header's
+// separate LearningPathSwitcher dropdown.
+export function GreetingHeader({
+  name,
+  pathLabel,
+  pathEmoji,
+}: {
+  name: string;
+  pathLabel: string;
+  pathEmoji: string;
+}) {
   const theme = useTheme();
   return (
     <View style={styles.row}>
       <View style={styles.textCol}>
-        <ThemedText themeColor="textSecondary" style={styles.eyebrow}>
-          YOUR DASHBOARD
-        </ThemedText>
+        <EyebrowPill label="Your Dashboard" />
         <ThemedText style={styles.greeting}>
           {getGreeting()}, {name} 👋
         </ThemedText>
       </View>
-      <View style={[styles.pathPill, { backgroundColor: theme.primaryMuted }]}>
-        <Ionicons name="rocket" size={12} color={theme.primary} />
-        <ThemedText themeColor="primary" style={styles.pathText}>
-          {pathLabel}
-        </ThemedText>
-        <Ionicons name="chevron-down" size={12} color={theme.primary} />
+      <View
+        style={[
+          styles.pathPill,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          Shadow.card,
+        ]}>
+        <ThemedText style={styles.pathEmoji}>{pathEmoji}</ThemedText>
+        <ThemedText style={styles.pathText}>{pathLabel}</ThemedText>
       </View>
     </View>
   );
@@ -44,12 +59,7 @@ const styles = StyleSheet.create({
   },
   textCol: {
     flex: 1,
-    gap: Spacing.one,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
+    gap: Spacing.two,
   },
   greeting: {
     fontSize: 23,
@@ -60,10 +70,14 @@ const styles = StyleSheet.create({
   pathPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  pathEmoji: {
+    fontSize: 13,
   },
   pathText: {
     fontSize: 12,
