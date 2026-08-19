@@ -1,16 +1,29 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AvatarMenu } from '@/components/avatar-menu';
+import { StreakBadge } from '@/components/streak-badge';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // The phone equivalent of the web app's persistent top header
-// (app/dashboard/layout.tsx: <Logo /> on the left, notification bell +
-// avatar cluster on the right) — same wordmark asset, reflowed for a
-// narrow screen. Sits above the scroll content, not inside it, so it stays
-// put the way the web header does.
-export function AppHeader() {
+// (app/dashboard/layout.tsx: <Logo />, <StudyStreak />, <UserMenu /> — same
+// cluster, same order) — same wordmark asset, reflowed for a narrow
+// screen. Sits above the scroll content, not inside it, so it stays put
+// the way the web header does.
+export function AppHeader({
+  name,
+  avatarInitial,
+  streakDays,
+  todayKP,
+  targetKP,
+}: {
+  name: string;
+  avatarInitial: string;
+  streakDays: number;
+  todayKP: number;
+  targetKP: number;
+}) {
   const theme = useTheme();
   return (
     <View style={[styles.wrap, { backgroundColor: theme.background, borderBottomColor: theme.border }]}>
@@ -22,17 +35,10 @@ export function AppHeader() {
           accessible
           accessibilityLabel="Studium"
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Notifications"
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.bellButton,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-            pressed && styles.bellPressed,
-          ]}>
-          <Ionicons name="notifications-outline" size={17} color={theme.textSecondary} />
-        </Pressable>
+        <View style={styles.right}>
+          <StreakBadge streakDays={streakDays} todayKP={todayKP} targetKP={targetKP} />
+          <AvatarMenu name={name} avatarInitial={avatarInitial} />
+        </View>
       </View>
     </View>
   );
@@ -56,15 +62,9 @@ const styles = StyleSheet.create({
     height: 22,
     aspectRatio: 779 / 303,
   },
-  bellButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: StyleSheet.hairlineWidth,
+  right: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellPressed: {
-    opacity: 0.7,
+    gap: Spacing.two,
   },
 });

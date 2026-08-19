@@ -9,12 +9,15 @@ import { ContinueCard } from './components/ContinueCard';
 import { DailyCaseCard } from './components/DailyCaseCard';
 import { GreetingHeader } from './components/GreetingHeader';
 import { LeaderboardCard } from './components/LeaderboardCard';
+import { PathChip } from './components/PathChip';
 import { PerformanceCard } from './components/PerformanceCard';
-import { StatsRow } from './components/StatsRow';
+import { ProgressReadinessCard } from './components/ProgressReadinessCard';
+import { RecommendedTodayCard } from './components/RecommendedTodayCard';
 import { mockDashboard } from './data';
 
 // The phone-oriented equivalent of the web app's /dashboard home page:
-// same real sections (streak, Continue Studying, Daily Case, Leaderboard,
+// same real sections (header, path switcher, Continue Studying, Daily
+// Case, Recommended for Today, Progress & Readiness, Leaderboard,
 // Performance), reflowed into one vertical scroll instead of the web's
 // two-column layout, since a phone screen only ever has room for one
 // column. Every section is a single component in ./components, so swapping
@@ -26,14 +29,21 @@ export function DashboardScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
-      <AppHeader />
+      <AppHeader
+        name={data.name}
+        avatarInitial={data.avatarInitial}
+        streakDays={data.streakDays}
+        todayKP={data.todayKP}
+        targetKP={data.targetKP}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} />
-          <StatsRow streakDays={data.streakDays} todayKP={data.todayKP} targetKP={data.targetKP} />
+          <PathChip label={data.pathLabel} emoji={data.pathEmoji} />
+
+          <GreetingHeader name={data.name} />
 
           <ContinueCard
             subject={data.nextLesson.subject}
@@ -46,6 +56,21 @@ export function DashboardScreen() {
             title={data.dailyCase.title}
             category={data.dailyCase.category}
             difficulty={data.dailyCase.difficulty}
+          />
+
+          <RecommendedTodayCard
+            subjectName={data.recommended.subjectName}
+            label={data.recommended.label}
+            kp={data.recommended.kp}
+            minutes={data.recommended.minutes}
+          />
+
+          <ProgressReadinessCard
+            examReadinessPercent={data.examReadinessPercent}
+            overallMasteryPercent={data.overallMasteryPercent}
+            studyTimeToday={data.studyTimeToday}
+            weeklyKP={data.weeklyKP}
+            weeklyActivity={data.weeklyActivity}
           />
 
           <LeaderboardCard rows={data.leaderboard} />
