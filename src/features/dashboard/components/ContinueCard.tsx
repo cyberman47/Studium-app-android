@@ -30,10 +30,12 @@ export function ContinueCard({
           <ThemedText style={styles.badgeText}>Continue Studying</ThemedText>
         </View>
 
-        <ThemedText style={styles.title}>{title}</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Next lesson · {completedCount} / {total} in {subject}
-        </ThemedText>
+        <View style={styles.textGroup}>
+          <ThemedText style={styles.title}>{title}</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Next lesson · {completedCount} / {total} in {subject}
+          </ThemedText>
+        </View>
 
         <Pressable
           onPress={onPress}
@@ -55,8 +57,11 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: Radius.lg,
-    padding: Spacing.four,
-    gap: Spacing.two,
+    // Tailwind p-5.
+    padding: 20,
+    // Tailwind gap-3 — badge, title/subtitle group, and CTA all sit an
+    // even 12px apart instead of ad-hoc per-element margins.
+    gap: 12,
   },
   badge: {
     flexDirection: 'row',
@@ -67,12 +72,14 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: 5,
-    marginBottom: Spacing.two,
   },
   badgeText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
+  },
+  textGroup: {
+    gap: 4,
   },
   title: {
     color: '#FFFFFF',
@@ -83,7 +90,6 @@ const styles = StyleSheet.create({
   subtitle: {
     color: 'rgba(255,255,255,0.78)',
     fontSize: 13,
-    marginBottom: Spacing.three,
   },
   resumeButton: {
     flexDirection: 'row',

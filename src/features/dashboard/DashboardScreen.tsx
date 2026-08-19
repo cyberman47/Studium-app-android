@@ -41,9 +41,10 @@ export function DashboardScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <PathChip label={data.pathLabel} emoji={data.pathEmoji} />
-
-          <GreetingHeader name={data.name} />
+          <View style={styles.headerSection}>
+            <PathChip label={data.pathLabel} emoji={data.pathEmoji} />
+            <GreetingHeader name={data.name} />
+          </View>
 
           <ContinueCard
             subject={data.nextLesson.subject}
@@ -104,5 +105,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: Spacing.four,
+  },
+  // Tighter than the standard section gap above — the path chip and
+  // greeting read as one header block, not two separate sections.
+  headerSection: {
+    gap: Spacing.two,
   },
 });

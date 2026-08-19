@@ -55,8 +55,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two + 2,
+    // Tailwind px-4 py-3.
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 12,
   },
   logo: {
     height: 28,

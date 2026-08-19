@@ -1,8 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -11,27 +9,20 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-// Matches app/dashboard/(main)/page.tsx's own greeting row: the shared
-// `.eyebrow` teal pill + bold greeting. The current-path indicator that
-// used to live inline here on the right is now the full-width PathChip
-// (its own row above this one), matching the new mobile layout's
-// sub-header — the header itself (logo, streak, avatar) already covers
-// what the desktop's inline badge used to.
+// The standalone "Your Dashboard" eyebrow that used to sit above this was
+// dropped — it only added dead space between the path chip and the
+// greeting without carrying real information (the path chip right above
+// it already establishes "this is your dashboard" context). Just the
+// greeting itself now.
 export function GreetingHeader({ name }: { name: string }) {
   return (
-    <View style={styles.col}>
-      <EyebrowPill label="Your Dashboard" />
-      <ThemedText style={styles.greeting}>
-        {getGreeting()}, {name} 👋
-      </ThemedText>
-    </View>
+    <ThemedText style={styles.greeting}>
+      {getGreeting()}, {name} 👋
+    </ThemedText>
   );
 }
 
 const styles = StyleSheet.create({
-  col: {
-    gap: Spacing.two,
-  },
   greeting: {
     fontSize: 23,
     fontWeight: '800',
