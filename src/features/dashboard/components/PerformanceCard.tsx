@@ -45,18 +45,27 @@ export function PerformanceCard({
   return (
     <Card>
       <View style={styles.header}>
-        <Ionicons name="stats-chart" size={13} color={theme.primary} />
-        <ThemedText themeColor="textSecondary" style={styles.headerText}>
-          YOUR PERFORMANCE
-        </ThemedText>
+        <View style={styles.headerLeft}>
+          <Ionicons name="stats-chart" size={13} color={theme.primary} />
+          <ThemedText themeColor="textSecondary" style={styles.headerText}>
+            YOUR PERFORMANCE
+          </ThemedText>
+        </View>
       </View>
 
       <View style={styles.levelRow}>
-        <View>
-          <ThemedText themeColor="textSecondary" style={styles.levelLabel}>
-            Level {level}
-          </ThemedText>
-          <ThemedText style={styles.levelName}>{levelName}</ThemedText>
+        <View style={styles.levelLeft}>
+          <View style={[styles.levelBadge, { backgroundColor: theme.primaryMuted }]}>
+            <ThemedText themeColor="primary" style={styles.levelBadgeText}>
+              {level}
+            </ThemedText>
+          </View>
+          <View>
+            <ThemedText themeColor="textSecondary" style={styles.levelLabel}>
+              Level {level}
+            </ThemedText>
+            <ThemedText style={styles.levelName}>{levelName}</ThemedText>
+          </View>
         </View>
         <View style={styles.kpBadge}>
           <Ionicons name="flash" size={13} color={theme.primary} />
@@ -84,18 +93,37 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     marginBottom: Spacing.three,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   headerText: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.4,
   },
   levelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  levelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + 2,
+  },
+  levelBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  levelBadgeText: {
+    fontSize: 16,
+    fontWeight: '800',
   },
   levelLabel: {
     fontSize: 10,

@@ -95,9 +95,36 @@ export const Spacing = {
 // rounding reads as one consistent system rather than ad-hoc per component.
 export const Radius = {
   sm: 12,
-  md: 16,
-  lg: 24,
+  md: 14,
+  lg: 20,
   pill: 999,
+} as const;
+
+// Cross-platform elevation so cards read as raised surfaces instead of flat
+// color swatches — Android uses `elevation`, iOS uses the shadow* props.
+// `card` is for standard white/dark surfaces; `raised` is for the hero
+// cards (gradient, daily case) that should visibly float above the rest.
+export const Shadow = {
+  card: Platform.select({
+    ios: {
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.06,
+      shadowRadius: 16,
+    },
+    android: { elevation: 3 },
+    default: {},
+  }),
+  raised: Platform.select({
+    ios: {
+      shadowColor: '#0F172A',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.16,
+      shadowRadius: 24,
+    },
+    android: { elevation: 8 },
+    default: {},
+  }),
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

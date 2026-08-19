@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 
 const difficultyColors: Record<string, string> = {
   Beginner: 'rgba(16, 185, 129, 0.2)',
@@ -22,42 +22,47 @@ export function DailyCaseCard({
   onPress?: () => void;
 }) {
   return (
-    <View style={styles.card}>
-      <Ionicons
-        name="pulse"
-        size={110}
-        color="rgba(255,255,255,0.05)"
-        style={styles.watermark}
-      />
-      <ThemedText style={styles.eyebrow}>Daily Case Challenge</ThemedText>
+    <View style={[styles.shadowWrap, Shadow.raised]}>
+      <View style={styles.card}>
+        <Ionicons
+          name="pulse"
+          size={110}
+          color="rgba(255,255,255,0.05)"
+          style={styles.watermark}
+        />
+        <ThemedText style={styles.eyebrow}>Daily Case Challenge</ThemedText>
 
-      <View style={styles.chipRow}>
-        <View style={styles.chip}>
-          <ThemedText style={styles.chipText}>{category}</ThemedText>
+        <View style={styles.chipRow}>
+          <View style={styles.chip}>
+            <ThemedText style={styles.chipText}>{category}</ThemedText>
+          </View>
+          <View style={[styles.chip, { backgroundColor: difficultyColors[difficulty] }]}>
+            <ThemedText style={styles.chipText}>{difficulty}</ThemedText>
+          </View>
         </View>
-        <View style={[styles.chip, { backgroundColor: difficultyColors[difficulty] }]}>
-          <ThemedText style={styles.chipText}>{difficulty}</ThemedText>
-        </View>
+
+        <ThemedText style={styles.title} numberOfLines={2}>
+          {title}
+        </ThemedText>
+
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel="Analyze today's case"
+          hitSlop={8}
+          style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}>
+          <ThemedText style={styles.linkText}>Analyze Case</ThemedText>
+          <Ionicons name="arrow-forward" size={14} color="#2DD4BF" />
+        </Pressable>
       </View>
-
-      <ThemedText style={styles.title} numberOfLines={2}>
-        {title}
-      </ThemedText>
-
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel="Analyze today's case"
-        hitSlop={8}
-        style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}>
-        <ThemedText style={styles.linkText}>Analyze Case</ThemedText>
-        <Ionicons name="arrow-forward" size={14} color="#2DD4BF" />
-      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowWrap: {
+    borderRadius: Radius.lg,
+  },
   card: {
     backgroundColor: '#0F172A',
     borderRadius: Radius.lg,

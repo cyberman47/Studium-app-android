@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 
 export function ContinueCard({
   subject,
@@ -19,42 +19,51 @@ export function ContinueCard({
   onPress?: () => void;
 }) {
   return (
-    <LinearGradient
-      colors={['#0F8B8D', '#0B6467']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.card}>
-      <View style={styles.badge}>
-        <ThemedText style={styles.badgeText}>⚡ Continue Studying</ThemedText>
-      </View>
+    <View style={[styles.shadowWrap, Shadow.raised]}>
+      <LinearGradient
+        colors={['#0F8B8D', '#0B6467']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.card}>
+        <View style={styles.badge}>
+          <Ionicons name="flash" size={12} color="#FFFFFF" />
+          <ThemedText style={styles.badgeText}>Continue Studying</ThemedText>
+        </View>
 
-      <ThemedText style={styles.title}>{title}</ThemedText>
-      <ThemedText style={styles.subtitle}>
-        Next lesson · {completedCount} / {total} in {subject}
-      </ThemedText>
+        <ThemedText style={styles.title}>{title}</ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Next lesson · {completedCount} / {total} in {subject}
+        </ThemedText>
 
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`Resume ${title}`}
-        hitSlop={8}
-        style={({ pressed }) => [styles.resumeButton, pressed && styles.resumeButtonPressed]}>
-        <Ionicons name="play" size={13} color="#0C6C6E" />
-        <ThemedText style={styles.resumeText}>Resume</ThemedText>
-      </Pressable>
-    </LinearGradient>
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={`Resume ${title}`}
+          hitSlop={8}
+          style={({ pressed }) => [styles.resumeButton, pressed && styles.resumeButtonPressed]}>
+          <Ionicons name="play" size={13} color="#0C6C6E" />
+          <ThemedText style={styles.resumeText}>Resume</ThemedText>
+        </Pressable>
+      </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  shadowWrap: {
+    borderRadius: Radius.lg,
+  },
   card: {
     borderRadius: Radius.lg,
     padding: Spacing.four,
     gap: Spacing.two,
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three,
     paddingVertical: 5,

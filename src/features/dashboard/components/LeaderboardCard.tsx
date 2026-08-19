@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.4,
   },
   list: {
     gap: 2,

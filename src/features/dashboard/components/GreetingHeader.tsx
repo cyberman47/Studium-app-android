@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -23,12 +24,12 @@ export function GreetingHeader({ name, pathLabel }: { name: string; pathLabel: s
           {getGreeting()}, {name} 👋
         </ThemedText>
       </View>
-      <View
-        style={[
-          styles.pathPill,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-        ]}>
-        <ThemedText style={styles.pathText}>{pathLabel}</ThemedText>
+      <View style={[styles.pathPill, { backgroundColor: theme.primaryMuted }]}>
+        <Ionicons name="rocket" size={12} color={theme.primary} />
+        <ThemedText themeColor="primary" style={styles.pathText}>
+          {pathLabel}
+        </ThemedText>
+        <Ionicons name="chevron-down" size={12} color={theme.primary} />
       </View>
     </View>
   );
@@ -48,16 +49,19 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 0.6,
+    letterSpacing: 1,
   },
   greeting: {
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '800',
-    lineHeight: 28,
+    lineHeight: 29,
+    letterSpacing: -0.3,
   },
   pathPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     borderRadius: Radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
