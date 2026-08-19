@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two + 2,
   },
   logo: {
-    height: 22,
+    height: 28,
     aspectRatio: 779 / 303,
   },
   right: {
