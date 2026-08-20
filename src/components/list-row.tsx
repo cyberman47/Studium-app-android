@@ -5,11 +5,12 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// One row of the Home screen's grouped list (Leaderboard / Recommended /
-// Performance) — an iOS-settings-style pattern: small tinted icon, a
-// title + one-line subtitle stacked, a trailing chevron. Dividers between
-// rows are drawn by the parent container, not per-row, so the group reads
-// as one surface instead of three stacked mini-cards.
+// One row of a grouped, iOS-Settings-style list (see GroupedList): a small
+// tinted icon, a title + one-line subtitle stacked, a trailing chevron.
+// Dividers between rows are drawn by the parent container, not per-row, so
+// the group reads as one surface instead of several stacked mini-cards.
+// Used on the Home dashboard (Leaderboard/Recommended/Performance) and the
+// Profile screen (Recent Posts/Community Activity) alike.
 export function ListRow({
   icon,
   iconColor,

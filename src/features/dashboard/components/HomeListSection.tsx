@@ -1,10 +1,7 @@
-import { StyleSheet, View } from 'react-native';
-
-import { Radius, Shadow, Spacing } from '@/constants/theme';
+import { GroupedList } from '@/components/grouped-list';
+import { ListRow } from '@/components/list-row';
 import { useTheme } from '@/hooks/use-theme';
 import type { LeaderboardRow } from '../data';
-
-import { ListRow } from './ListRow';
 
 // Replaces three separate full-height cards (Leaderboard, Recommended,
 // Performance) with one grouped white list, iOS-Settings style — same
@@ -30,50 +27,31 @@ export function HomeListSection({
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.shadowWrap, Shadow.card]}>
-      <View style={[styles.group, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <ListRow
-          icon="trophy"
-          iconColor={theme.amber}
-          iconBackground={theme.amberMuted}
-          title="Leaderboard"
-          subtitle={`${topLeaderboardRow.name} · ${topLeaderboardRow.totalKP.toLocaleString()} KP`}
-          onPress={onPressLeaderboard}
-        />
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        <ListRow
-          icon="flash"
-          iconColor={theme.primary}
-          iconBackground={theme.primaryMuted}
-          title={`Recommended: ${recommended.subjectName}`}
-          subtitle={`${recommended.label} · +${recommended.kp} KP · ~${recommended.minutes} min`}
-          onPress={onPressRecommended}
-        />
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-        <ListRow
-          icon="trending-up"
-          iconColor={theme.primary}
-          iconBackground={theme.primaryMuted}
-          title={`Level ${performance.level} · ${performance.levelName}`}
-          subtitle={`${performance.totalKP.toLocaleString()} KP earned`}
-          onPress={onPressPerformance}
-        />
-      </View>
-    </View>
+    <GroupedList>
+      <ListRow
+        icon="trophy"
+        iconColor={theme.amber}
+        iconBackground={theme.amberMuted}
+        title="Leaderboard"
+        subtitle={`${topLeaderboardRow.name} · ${topLeaderboardRow.totalKP.toLocaleString()} KP`}
+        onPress={onPressLeaderboard}
+      />
+      <ListRow
+        icon="flash"
+        iconColor={theme.primary}
+        iconBackground={theme.primaryMuted}
+        title={`Recommended: ${recommended.subjectName}`}
+        subtitle={`${recommended.label} · +${recommended.kp} KP · ~${recommended.minutes} min`}
+        onPress={onPressRecommended}
+      />
+      <ListRow
+        icon="trending-up"
+        iconColor={theme.primary}
+        iconBackground={theme.primaryMuted}
+        title={`Level ${performance.level} · ${performance.levelName}`}
+        subtitle={`${performance.totalKP.toLocaleString()} KP earned`}
+        onPress={onPressPerformance}
+      />
+    </GroupedList>
   );
 }
-
-const styles = StyleSheet.create({
-  shadowWrap: {
-    borderRadius: Radius.lg,
-  },
-  group: {
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.three,
-    overflow: 'hidden',
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-  },
-});
