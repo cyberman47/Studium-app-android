@@ -5,10 +5,11 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Matches the web dashboard's real "Recommended for Today" card
-// (app/dashboard/(main)/page.tsx): a teal-tinted panel, not the neutral
-// white card every other section uses — it's meant to stand out as today's
-// single actionable pick, not blend in as just another status card.
+// Not rendered on Home anymore — it now shows a single row inside
+// HomeListSection's grouped list. Kept here as the fuller destination a
+// recommended row's chevron should eventually route to, matching the
+// web dashboard's real "Recommended for Today" card
+// (app/dashboard/(main)/page.tsx).
 export function RecommendedTodayCard({
   subjectName,
   label,

@@ -8,19 +8,17 @@ import { useTheme } from '@/hooks/use-theme';
 import { ContinueCard } from './components/ContinueCard';
 import { DailyCaseCard } from './components/DailyCaseCard';
 import { GreetingHeader } from './components/GreetingHeader';
-import { LeaderboardCard } from './components/LeaderboardCard';
-import { PerformanceCard } from './components/PerformanceCard';
-import { ProgressReadinessCard } from './components/ProgressReadinessCard';
+import { HomeListSection } from './components/HomeListSection';
 import { QuickAccess } from './components/QuickAccess';
-import { RecommendedTodayCard } from './components/RecommendedTodayCard';
+import { StatsRow } from './components/StatsRow';
 import { mockDashboard } from './data';
 
-// A single-column stack, ordered by "what should I do right now": Continue
-// Studying first (the one thing that matters most), then today's study
-// plan progress, then the Daily Case, then a one-line leaderboard glance.
-// Secondary material (a specific recommendation, the fuller performance
-// summary) sits further down, still reachable but not competing for
-// attention with the primary flow above it.
+// Composition, top to bottom, deliberately alternates visual weight so no
+// two sections in a row read the same: a bold gradient hero (Continue
+// Studying), then a light chip row (stats) with a plain text link, then
+// another bold dark card (Daily Case — the one deliberate exception that
+// stays card-like), then one grouped white list standing in for what used
+// to be three separate full-height cards, then the quick-access shelf.
 export function DashboardScreen() {
   const theme = useTheme();
   const data = mockDashboard;
@@ -48,11 +46,7 @@ export function DashboardScreen() {
             total={data.nextLesson.total}
           />
 
-          <ProgressReadinessCard
-            daysToExam={data.daysToExam}
-            todayKP={data.todayKP}
-            targetKP={data.targetKP}
-          />
+          <StatsRow daysToExam={data.daysToExam} todayKP={data.todayKP} targetKP={data.targetKP} />
 
           <DailyCaseCard
             title={data.dailyCase.title}
@@ -60,20 +54,10 @@ export function DashboardScreen() {
             difficulty={data.dailyCase.difficulty}
           />
 
-          <LeaderboardCard rows={data.leaderboard} minimal />
-
-          <RecommendedTodayCard
-            subjectName={data.recommended.subjectName}
-            label={data.recommended.label}
-            kp={data.recommended.kp}
-            minutes={data.recommended.minutes}
-          />
-
-          <PerformanceCard
-            level={data.level}
-            levelName={data.levelName}
-            totalKP={data.totalKP}
-            focusAreas={data.focusAreas}
+          <HomeListSection
+            topLeaderboardRow={data.leaderboard[0]}
+            recommended={data.recommended}
+            performance={{ level: data.level, levelName: data.levelName, totalKP: data.totalKP }}
           />
 
           <QuickAccess />

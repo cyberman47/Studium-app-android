@@ -7,10 +7,10 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { Card } from './Card';
 
-// Deliberately just the headline number and today's progress — this used
-// to be an entire dashboard-inside-a-dashboard (exam readiness, a 2x2 stat
-// grid, a weekly chart). All of that detail belongs on a dedicated study
-// plan screen, not competing for attention on the home screen.
+// Not rendered on Home anymore — DashboardScreen uses the much smaller
+// StatsRow chips instead, with a "View study plan" link that should
+// eventually route here. Kept as the fuller destination component for
+// that future dedicated study plan screen rather than deleted.
 export function ProgressReadinessCard({
   daysToExam,
   todayKP,

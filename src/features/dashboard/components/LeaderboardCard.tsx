@@ -58,11 +58,10 @@ function Row({ row, rank }: { row: LeaderboardRow; rank: number }) {
   );
 }
 
-// `minimal` shows just the #1 spot as a single plain-text line under a
-// small label — the leaderboard isn't a primary daily action, so on the
-// home screen it should read as a glance, not a full card competing with
-// Daily Case and the study plan. The full list (every row, avatars,
-// streaks) is still here for a dedicated leaderboard screen later.
+// Not rendered on Home anymore — it now shows a single row inside
+// HomeListSection's grouped list. Kept here (both the `minimal` glance
+// and the full row list) as the fuller destination a leaderboard row's
+// chevron should eventually route to.
 export function LeaderboardCard({ rows, minimal = false }: { rows: LeaderboardRow[]; minimal?: boolean }) {
   const theme = useTheme();
 

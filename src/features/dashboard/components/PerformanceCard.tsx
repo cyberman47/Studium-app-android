@@ -31,6 +31,9 @@ function FocusAreaRow({ area }: { area: FocusArea }) {
   );
 }
 
+// Not rendered on Home anymore — it now shows a single row inside
+// HomeListSection's grouped list. Kept here as the fuller destination a
+// performance row's chevron should eventually route to.
 export function PerformanceCard({
   level,
   levelName,
