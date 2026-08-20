@@ -5,11 +5,13 @@ import type { LeaderboardRow } from '../data';
 
 // Replaces three separate full-height cards (Leaderboard, Recommended,
 // Performance) with one grouped white list, iOS-Settings style — same
-// information at a glance, a fraction of the vertical space. Each of
-// these still has a fuller, more detailed component (LeaderboardCard,
-// RecommendedTodayCard, PerformanceCard) that isn't rendered on Home
-// anymore but is kept around for a future dedicated detail screen, which
-// is what each row's chevron implies it leads to.
+// information at a glance, a fraction of the vertical space. Leaderboard
+// and Recommended still have fuller, more detailed components
+// (LeaderboardCard, RecommendedTodayCard) that aren't rendered anywhere
+// yet but are kept around for future dedicated detail screens. The
+// Performance row's chevron already routes somewhere real: the Progress
+// tab, where features/progress/components/PerformanceCard shows the full
+// detail this row summarizes.
 export function HomeListSection({
   topLeaderboardRow,
   recommended,

@@ -5,9 +5,8 @@ import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { FocusArea } from '../data';
-
-import { Card } from './Card';
+import { Card } from '@/features/dashboard/components/Card';
+import type { FocusArea } from '@/features/dashboard/data';
 
 function toneColor(accuracy: number, theme: ReturnType<typeof useTheme>): string {
   if (accuracy < 60) return theme.rose;
@@ -31,9 +30,10 @@ function FocusAreaRow({ area }: { area: FocusArea }) {
   );
 }
 
-// Not rendered on Home anymore — it now shows a single row inside
-// HomeListSection's grouped list. Kept here as the fuller destination a
-// performance row's chevron should eventually route to.
+// The full Performance detail: level, total KP, and every focus area's
+// mastery — what Home's grouped-list "Level X" row points to. Lives next
+// to StudyPlanCard on the Progress tab rather than a separate screen,
+// since study planning and performance are really one picture.
 export function PerformanceCard({
   level,
   levelName,

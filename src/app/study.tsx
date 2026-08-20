@@ -5,7 +5,7 @@ export default function StudyTab() {
     <ComingSoonScreen
       icon="map-outline"
       title="Study"
-      description="Your MCAT curriculum, learning paths, and study planner are coming to this tab next."
+      description="Your MCAT curriculum and learning paths are coming to this tab next."
     />
   );
 }

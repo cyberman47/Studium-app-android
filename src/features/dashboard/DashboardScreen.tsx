@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -21,7 +22,9 @@ import { mockDashboard } from './data';
 // to be three separate full-height cards, then the quick-access shelf.
 export function DashboardScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const data = mockDashboard;
+  const goToProgress = () => router.push('/progress');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -46,7 +49,12 @@ export function DashboardScreen() {
             total={data.nextLesson.total}
           />
 
-          <StatsRow daysToExam={data.daysToExam} todayKP={data.todayKP} targetKP={data.targetKP} />
+          <StatsRow
+            daysToExam={data.daysToExam}
+            todayKP={data.todayKP}
+            targetKP={data.targetKP}
+            onViewPlan={goToProgress}
+          />
 
           <DailyCaseCard
             title={data.dailyCase.title}
@@ -58,6 +66,7 @@ export function DashboardScreen() {
             topLeaderboardRow={data.leaderboard[0]}
             recommended={data.recommended}
             performance={{ level: data.level, levelName: data.levelName, totalKP: data.totalKP }}
+            onPressPerformance={goToProgress}
           />
 
           <QuickAccess />
