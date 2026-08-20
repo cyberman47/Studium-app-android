@@ -12,7 +12,6 @@ import { GreetingHeader } from './components/GreetingHeader';
 import { HomeListSection } from './components/HomeListSection';
 import { QuickAccess } from './components/QuickAccess';
 import { StatsRow } from './components/StatsRow';
-import { StudyingPathsSection } from './components/StudyingPathsSection';
 import { mockDashboard } from './data';
 
 // Composition, top to bottom, deliberately alternates visual weight so no
@@ -20,9 +19,9 @@ import { mockDashboard } from './data';
 // Studying), then a light chip row (stats) with a plain text link, then
 // another bold dark card (Daily Case — the one deliberate exception that
 // stays card-like), then one grouped white list standing in for what used
-// to be three separate full-height cards, then the quick-access shelf,
-// and finally the Studying Paths grid — the same "Browse Paths" tracks
-// as the web app's Learning Paths page, mirrored here at the bottom.
+// to be three separate full-height cards, then the quick-access shelf.
+// The Studying Paths grid lives on the Study tab (features/study), not
+// here — Home stays focused on "what to do right now".
 export function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -73,8 +72,6 @@ export function DashboardScreen() {
           />
 
           <QuickAccess />
-
-          <StudyingPathsSection />
         </View>
       </ScrollView>
     </SafeAreaView>
