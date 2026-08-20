@@ -57,7 +57,10 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#0F172A',
     borderRadius: Radius.lg,
-    padding: Spacing.three,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.06)',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     overflow: 'hidden',
   },
   watermark: {
@@ -68,14 +71,14 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: '#5EEAD4',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   meta: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     marginTop: 6,
   },
   title: {
@@ -91,8 +94,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
-    marginTop: Spacing.three,
-    minHeight: 44,
+    marginTop: 12,
+    minHeight: 40,
   },
   linkPressed: {
     opacity: 0.7,
@@ -100,6 +103,6 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#5EEAD4',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 });

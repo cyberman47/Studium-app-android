@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Shadow, Spacing } from '@/constants/theme';
+import { Radius, Shadow } from '@/constants/theme';
 
 export function ContinueCard({
   subject,
@@ -53,9 +53,11 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: Radius.lg,
-    // Tailwind p-5.
-    padding: 20,
-    gap: Spacing.four,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    gap: 12,
   },
   textGroup: {
     gap: 4,
@@ -63,7 +65,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: 'rgba(255,255,255,0.72)',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   title: {
     color: '#FFFFFF',
@@ -83,7 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 6,
-    minHeight: 44,
+    minHeight: 40,
   },
   resumeLinkPressed: {
     opacity: 0.7,
@@ -91,6 +93,6 @@ const styles = StyleSheet.create({
   resumeText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 });

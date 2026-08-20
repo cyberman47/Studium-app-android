@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
   base: {
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.four,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
   },
 });

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { Card } from './Card';
@@ -27,7 +27,7 @@ export function ProgressReadinessCard({
   const todayPercent = Math.min(100, Math.round((todayKP / targetKP) * 100));
 
   return (
-    <Card style={{ padding: Spacing.three }}>
+    <Card>
       <ThemedText themeColor="primary" style={styles.eyebrow}>
         Study Plan
       </ThemedText>
@@ -69,28 +69,29 @@ export function ProgressReadinessCard({
 const styles = StyleSheet.create({
   eyebrow: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   days: {
     fontSize: 26,
     fontWeight: '800',
-    marginTop: Spacing.two,
+    marginTop: 4,
   },
   until: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
     marginTop: 1,
   },
   goalRow: {
-    marginTop: Spacing.three,
+    marginTop: 12,
   },
   goalLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   track: {
-    height: 6,
+    height: 5,
     borderRadius: Radius.pill,
     overflow: 'hidden',
     marginTop: 6,
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 5,
-    marginTop: Spacing.three,
+    marginTop: 12,
     minHeight: 40,
   },
   linkPressed: {
@@ -112,6 +113,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
 });

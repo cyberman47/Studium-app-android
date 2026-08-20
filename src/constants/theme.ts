@@ -93,39 +93,41 @@ export const Spacing = {
 
 // 8dp-rhythm radii, used the same way across every card/pill/button so
 // rounding reads as one consistent system rather than ad-hoc per component.
-// `lg` is the standard card radius app-wide — Tailwind's rounded-2xl
-// (16px), matching every dashboard widget (Card, ContinueCard,
-// DailyCaseCard, RecommendedTodayCard, PathChip).
+// `lg` is the standard card radius app-wide (14px), matching every
+// dashboard widget (Card, ContinueCard, DailyCaseCard, RecommendedTodayCard).
 export const Radius = {
-  sm: 12,
-  md: 14,
-  lg: 16,
+  sm: 10,
+  md: 12,
+  lg: 14,
   pill: 999,
 } as const;
 
 // Cross-platform elevation so cards read as raised surfaces instead of flat
 // color swatches — Android uses `elevation`, iOS uses the shadow* props.
-// `card` is for standard white/dark surfaces; `raised` is for the hero
-// cards (gradient, daily case) that should visibly float above the rest.
+// Kept deliberately light: cards lean on their `border` color for
+// separation, and shadow is just a soft assist rather than the primary
+// affordance. `card` is for standard white/dark surfaces; `raised` is for
+// the hero cards (gradient, daily case) that should read as slightly
+// elevated, not heavily so.
 export const Shadow = {
   card: Platform.select({
     ios: {
       shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.06,
-      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.04,
+      shadowRadius: 8,
     },
-    android: { elevation: 3 },
+    android: { elevation: 1 },
     default: {},
   }),
   raised: Platform.select({
     ios: {
       shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.16,
-      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 14,
     },
-    android: { elevation: 8 },
+    android: { elevation: 3 },
     default: {},
   }),
 } as const;

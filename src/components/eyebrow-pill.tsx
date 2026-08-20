@@ -45,7 +45,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
 });

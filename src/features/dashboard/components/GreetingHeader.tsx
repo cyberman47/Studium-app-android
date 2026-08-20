@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Shadow, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 function getGreeting(): string {
@@ -40,7 +40,6 @@ export function GreetingHeader({
         style={({ pressed }) => [
           styles.pathBadge,
           { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          Shadow.card,
           pressed && styles.pathBadgePressed,
         ]}>
         <ThemedText style={styles.pathEmoji}>{pathEmoji}</ThemedText>
@@ -75,10 +74,10 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: Radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     maxWidth: 200,
-    minHeight: 36,
+    minHeight: 32,
   },
   pathBadgePressed: {
     opacity: 0.7,
@@ -89,7 +88,7 @@ const styles = StyleSheet.create({
   pathLabel: {
     flexShrink: 1,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   chevronOpen: {
     transform: [{ rotate: '180deg' }],

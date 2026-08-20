@@ -88,7 +88,7 @@ export function LeaderboardCard({ rows, minimal = false }: { rows: LeaderboardRo
   }
 
   return (
-    <Card style={{ padding: Spacing.three }}>
+    <Card>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Ionicons name="trophy" size={13} color={theme.amber} />
@@ -123,7 +123,8 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
   },
   list: {
     gap: 2,
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   avatar: {
     width: 32,
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   nameCol: {
     flex: 1,
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   },
   youTag: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   streakRow: {
     flexDirection: 'row',
@@ -179,11 +180,11 @@ const styles = StyleSheet.create({
   },
   streakText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   kp: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   // Minimal (home screen) variant: no card surface, no avatar — just a
   // label and a single plain-text row, so it reads as a lightweight glance
@@ -193,7 +194,8 @@ const styles = StyleSheet.create({
   },
   minimalLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
   },
   minimalRow: {
     flexDirection: 'row',
@@ -207,10 +209,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   minimalKp: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '500',
   },
 });

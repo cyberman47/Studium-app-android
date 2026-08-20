@@ -28,7 +28,7 @@ export function StreakBadge({
       style={[styles.pill, { backgroundColor: bg }]}
       accessibilityRole="text"
       accessibilityLabel={`${streakDays} day streak, ${todayKP} of ${targetKP} knowledge points today`}>
-      <Ionicons name="flame" size={13} color={theme.amber} />
+      <Ionicons name="flame" size={11} color={theme.amber} />
       <ThemedText style={[styles.text, { color }]}>
         {streakDays}d · {todayKP}/{targetKP} KP
       </ThemedText>
@@ -37,16 +37,18 @@ export function StreakBadge({
 }
 
 const styles = StyleSheet.create({
+  // Shrunk so this reads as secondary info next to the logo/avatar, not a
+  // competing headline element in the header.
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two + 2,
-    paddingVertical: 7,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 4,
   },
   text: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

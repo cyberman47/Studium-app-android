@@ -44,7 +44,7 @@ export function PerformanceCard({
 }) {
   const theme = useTheme();
   return (
-    <Card style={{ padding: Spacing.three }}>
+    <Card>
       <View style={styles.header}>
         <EyebrowPill emoji="📈" label="Performance" />
       </View>
@@ -89,7 +89,7 @@ export function PerformanceCard({
 
 const styles = StyleSheet.create({
   header: {
-    marginBottom: Spacing.three,
+    marginBottom: 12,
   },
   levelRow: {
     flexDirection: 'row',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   },
   levelBadgeText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   levelTextCol: {
     flex: 1,
@@ -120,7 +120,8 @@ const styles = StyleSheet.create({
   },
   levelLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   levelName: {
@@ -137,18 +138,18 @@ const styles = StyleSheet.create({
   },
   kpText: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   focusList: {
-    marginTop: Spacing.four,
+    marginTop: Spacing.three,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(148,163,184,0.25)',
-    paddingTop: Spacing.three,
-    gap: Spacing.three,
+    paddingTop: 12,
+    gap: 12,
   },
   focusListLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '500',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginBottom: 2,
@@ -162,14 +163,14 @@ const styles = StyleSheet.create({
   },
   focusLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   focusPercent: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   track: {
-    height: 6,
+    height: 5,
     borderRadius: Radius.pill,
     overflow: 'hidden',
   },

@@ -54,7 +54,8 @@ export function QuickAccess({ onPress }: { onPress?: (label: string) => void }) 
 const styles = StyleSheet.create({
   label: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
     marginBottom: Spacing.two + 2,
   },
   row: {
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
   },
   itemLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

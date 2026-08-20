@@ -69,11 +69,13 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.three,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
   },
   eyebrow: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   subject: {
@@ -83,13 +85,13 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     marginTop: 2,
   },
   metaRow: {
     flexDirection: 'row',
     gap: Spacing.three,
-    marginTop: Spacing.three,
+    marginTop: 12,
   },
   metaItem: {
     flexDirection: 'row',
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '500',
   },
   cta: {
     flexDirection: 'row',
@@ -107,8 +109,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 8,
     borderRadius: Radius.pill,
-    paddingVertical: Spacing.three,
-    marginTop: Spacing.four,
+    paddingVertical: 12,
+    marginTop: Spacing.three,
     minHeight: 44,
   },
   ctaPressed: {
@@ -117,6 +119,6 @@ const styles = StyleSheet.create({
   ctaText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
 });
