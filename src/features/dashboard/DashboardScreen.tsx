@@ -58,11 +58,7 @@ export function DashboardScreen() {
             onViewPlan={goToProgress}
           />
 
-          <DailyCaseCard
-            title={data.dailyCase.title}
-            category={data.dailyCase.category}
-            difficulty={data.dailyCase.difficulty}
-          />
+          <DailyCaseCard dailyCase={data.dailyCase} />
 
           <HomeListSection
             topLeaderboardRow={data.leaderboard[0]}

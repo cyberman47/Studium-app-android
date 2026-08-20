@@ -30,7 +30,16 @@ export type DashboardData = {
   level: number;
   levelName: string;
   nextLesson: { title: string; subject: string; completedCount: number; total: number };
-  dailyCase: { title: string; category: string; difficulty: 'Beginner' | 'Intermediate' | 'Advanced' };
+  dailyCase: {
+    title: string;
+    category: string;
+    difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+    stem: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
   recommended: { subjectName: string; label: string; kp: number; minutes: number };
   daysToExam: number;
   examReadinessPercent: number;
@@ -63,10 +72,19 @@ export const mockDashboard: DashboardData = {
     completedCount: 5,
     total: 9,
   },
+  // Real content, matching lib/clinicalCases.ts's "sudden-breathlessness-
+  // postpartum" case on the web exactly (title, category, stem, question,
+  // options, correctIndex, explanation) — not invented for the mobile app.
   dailyCase: {
     title: 'Sudden Breathlessness Postpartum',
-    category: 'Cardiology',
+    category: 'Pulmonology',
     difficulty: 'Intermediate',
+    stem: 'A 34-year-old woman, 2 weeks postpartum, presents with sudden-onset pleuritic chest pain and shortness of breath. Heart rate is 118 bpm, and SpO2 is 91% on room air. She has unilateral calf swelling.',
+    question: 'What is the most likely diagnosis?',
+    options: ['Pulmonary embolism', 'Community-acquired pneumonia', 'Panic attack', 'Spontaneous pneumothorax'],
+    correctIndex: 0,
+    explanation:
+      'The postpartum period is hypercoagulable. Pleuritic pain, tachycardia, hypoxia, and signs of a DVT (calf swelling) together point strongly to pulmonary embolism.',
   },
   recommended: {
     subjectName: 'Biology',
