@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: Radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: Spacing.four,
+    padding: Spacing.three,
   },
   eyebrow: {
     fontSize: 11,

@@ -4,13 +4,13 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
-// 5 tabs matching the web mobile dashboard's bottom nav
-// (components/mobile-dashboard.tsx on studium-website): Home, Learn,
-// Practice, Studium AI, Profile. Only Home has real content built out so
+// 5 tabs matching the web dashboard's real mobile bottom nav
+// (components/mobile-bottom-nav.tsx on studium-website): Home, Study,
+// Library, Progress, Profile. Only Home has real content built out so
 // far; the other four route to ComingSoonScreen placeholders
-// (src/app/learn.tsx, practice.tsx, ai.tsx, profile.tsx) so the nav itself
-// is fully wired now, and each tab's real screen can be swapped in later
-// without touching this file.
+// (src/app/study.tsx, library.tsx, progress.tsx, profile.tsx) so the nav
+// itself is fully wired now, and each tab's real screen can be swapped in
+// later without touching this file.
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
@@ -30,8 +30,8 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="learn">
-        <NativeTabs.Trigger.Label>Learn</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="study">
+        <NativeTabs.Trigger.Label>Study</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="map-outline" />,
@@ -40,22 +40,22 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="practice">
-        <NativeTabs.Trigger.Label>Practice</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="library">
+        <NativeTabs.Trigger.Label>Library</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="layers-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="layers" />,
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="library-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="library" />,
           }}
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="ai">
-        <NativeTabs.Trigger.Label>Studium AI</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="progress">
+        <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="sparkles-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="sparkles" />,
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="trending-up-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="trending-up" />,
           }}
         />
       </NativeTabs.Trigger>

@@ -47,7 +47,7 @@ export function DailyCaseCard({
           </View>
         </View>
 
-        <ThemedText style={styles.title} numberOfLines={2}>
+        <ThemedText style={styles.title} numberOfLines={3}>
           {title}
         </ThemedText>
 
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#0F172A',
     borderRadius: Radius.lg,
-    padding: Spacing.four,
+    padding: Spacing.three,
     overflow: 'hidden',
   },
   watermark: {
@@ -110,9 +110,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
-    lineHeight: 22,
+    lineHeight: 18,
     marginTop: Spacing.two,
   },
   // A real secondary button now, not a bare text+icon link — same pill
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(94, 234, 212, 0.14)',
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two + 2,
     marginTop: Spacing.three,
     minHeight: 44,

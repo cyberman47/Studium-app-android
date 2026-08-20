@@ -32,9 +32,11 @@ export type DashboardData = {
   nextLesson: { title: string; subject: string; completedCount: number; total: number };
   dailyCase: { title: string; category: string; difficulty: 'Beginner' | 'Intermediate' | 'Advanced' };
   recommended: { subjectName: string; label: string; kp: number; minutes: number };
+  daysToExam: number;
   examReadinessPercent: number;
   overallMasteryPercent: number;
   studyTimeToday: string;
+  studyTimeThisWeek: string;
   weeklyKP: { earned: number; target: number };
   weeklyActivity: WeeklyActivityDay[];
   leaderboard: LeaderboardRow[];
@@ -72,9 +74,11 @@ export const mockDashboard: DashboardData = {
     kp: 45,
     minutes: 25,
   },
+  daysToExam: 395,
   examReadinessPercent: 28,
   overallMasteryPercent: 22,
   studyTimeToday: '30m',
+  studyTimeThisWeek: '3h 5m',
   weeklyKP: { earned: 62, target: 105 },
   weeklyActivity: [
     { label: 'M', kp: 20 },

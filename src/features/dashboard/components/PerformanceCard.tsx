@@ -44,9 +44,9 @@ export function PerformanceCard({
 }) {
   const theme = useTheme();
   return (
-    <Card>
+    <Card style={{ padding: Spacing.three }}>
       <View style={styles.header}>
-        <EyebrowPill emoji="📈" label="Your Performance" />
+        <EyebrowPill emoji="📈" label="Performance" />
       </View>
 
       <View style={styles.levelRow}>
@@ -56,15 +56,17 @@ export function PerformanceCard({
               {level}
             </ThemedText>
           </View>
-          <View>
+          <View style={styles.levelTextCol}>
             <ThemedText themeColor="textSecondary" style={styles.levelLabel}>
               Level {level}
             </ThemedText>
-            <ThemedText style={styles.levelName}>{levelName}</ThemedText>
+            <ThemedText style={styles.levelName} numberOfLines={1}>
+              {levelName}
+            </ThemedText>
           </View>
         </View>
         <View style={styles.kpBadge}>
-          <Ionicons name="flash" size={13} color={theme.primary} />
+          <Ionicons name="flash" size={12} color={theme.primary} />
           <ThemedText themeColor="primary" style={styles.kpText}>
             {totalKP.toLocaleString()}
           </ThemedText>
@@ -95,38 +97,46 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   levelLeft: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two + 2,
+    gap: Spacing.two,
   },
   levelBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   levelBadgeText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
   },
+  levelTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
   levelLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     textTransform: 'uppercase',
   },
   levelName: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
     marginTop: 2,
   },
   kpBadge: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
+    marginLeft: Spacing.two,
   },
   kpText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
   },
   focusList: {

@@ -12,17 +12,18 @@ import { LeaderboardCard } from './components/LeaderboardCard';
 import { PathChip } from './components/PathChip';
 import { PerformanceCard } from './components/PerformanceCard';
 import { ProgressReadinessCard } from './components/ProgressReadinessCard';
+import { QuickAccess } from './components/QuickAccess';
 import { RecommendedTodayCard } from './components/RecommendedTodayCard';
 import { mockDashboard } from './data';
 
-// The phone-oriented equivalent of the web app's /dashboard home page:
-// same real sections (header, path switcher, Continue Studying, Daily
-// Case, Recommended for Today, Progress & Readiness, Leaderboard,
-// Performance), reflowed into one vertical scroll instead of the web's
-// two-column layout, since a phone screen only ever has room for one
-// column. Every section is a single component in ./components, so swapping
-// mockDashboard for a real data hook later only touches this file, not
-// the sections themselves.
+// The phone-oriented equivalent of the web app's /dashboard home page —
+// matches its real two-column mid-page arrangement (Study Planner +
+// Recommended for Today on the left, Daily Case + Leaderboard +
+// Performance on the right) rather than one long single-column stack,
+// with Continue Studying as a full-width hero above it and Quick Access
+// as a full-width row below. Every section is a single component in
+// ./components, so swapping mockDashboard for a real data hook later
+// only touches this file, not the sections themselves.
 export function DashboardScreen() {
   const theme = useTheme();
   const data = mockDashboard;
@@ -43,7 +44,7 @@ export function DashboardScreen() {
         <View style={styles.inner}>
           <View style={styles.headerSection}>
             <PathChip label={data.pathLabel} emoji={data.pathEmoji} />
-            <GreetingHeader name={data.name} />
+            <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} />
           </View>
 
           <ContinueCard
@@ -53,35 +54,47 @@ export function DashboardScreen() {
             total={data.nextLesson.total}
           />
 
-          <DailyCaseCard
-            title={data.dailyCase.title}
-            category={data.dailyCase.category}
-            difficulty={data.dailyCase.difficulty}
-          />
+          <View style={styles.columns}>
+            <View style={styles.column}>
+              <ProgressReadinessCard
+                daysToExam={data.daysToExam}
+                todayKP={data.todayKP}
+                targetKP={data.targetKP}
+                examReadinessPercent={data.examReadinessPercent}
+                overallMasteryPercent={data.overallMasteryPercent}
+                studyTimeToday={data.studyTimeToday}
+                studyTimeThisWeek={data.studyTimeThisWeek}
+                weeklyKP={data.weeklyKP}
+                weeklyActivity={data.weeklyActivity}
+              />
 
-          <RecommendedTodayCard
-            subjectName={data.recommended.subjectName}
-            label={data.recommended.label}
-            kp={data.recommended.kp}
-            minutes={data.recommended.minutes}
-          />
+              <RecommendedTodayCard
+                subjectName={data.recommended.subjectName}
+                label={data.recommended.label}
+                kp={data.recommended.kp}
+                minutes={data.recommended.minutes}
+              />
+            </View>
 
-          <ProgressReadinessCard
-            examReadinessPercent={data.examReadinessPercent}
-            overallMasteryPercent={data.overallMasteryPercent}
-            studyTimeToday={data.studyTimeToday}
-            weeklyKP={data.weeklyKP}
-            weeklyActivity={data.weeklyActivity}
-          />
+            <View style={styles.column}>
+              <DailyCaseCard
+                title={data.dailyCase.title}
+                category={data.dailyCase.category}
+                difficulty={data.dailyCase.difficulty}
+              />
 
-          <LeaderboardCard rows={data.leaderboard} />
+              <LeaderboardCard rows={data.leaderboard} compact />
 
-          <PerformanceCard
-            level={data.level}
-            levelName={data.levelName}
-            totalKP={data.totalKP}
-            focusAreas={data.focusAreas}
-          />
+              <PerformanceCard
+                level={data.level}
+                levelName={data.levelName}
+                totalKP={data.totalKP}
+                focusAreas={data.focusAreas.slice(0, 1)}
+              />
+            </View>
+          </View>
+
+          <QuickAccess />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -110,5 +123,14 @@ const styles = StyleSheet.create({
   // greeting read as one header block, not two separate sections.
   headerSection: {
     gap: Spacing.two,
+  },
+  columns: {
+    flexDirection: 'row',
+    gap: Spacing.three,
+  },
+  column: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.three,
   },
 });

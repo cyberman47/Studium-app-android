@@ -18,7 +18,10 @@ export function EyebrowPill({ emoji, label }: { emoji?: string; label: string })
         Shadow.card,
       ]}>
       {emoji ? <ThemedText style={styles.emoji}>{emoji}</ThemedText> : null}
-      <ThemedText themeColor="primary" style={styles.label}>
+      {/* numberOfLines=1 so a too-narrow parent truncates with an ellipsis
+          instead of wrapping to a 2nd line and visually spilling past the
+          pill's (and the card's) rounded bounds. */}
+      <ThemedText themeColor="primary" style={styles.label} numberOfLines={1}>
         {label}
       </ThemedText>
     </View>
@@ -30,6 +33,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
+    flexShrink: 1,
     gap: 6,
     borderRadius: Radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
