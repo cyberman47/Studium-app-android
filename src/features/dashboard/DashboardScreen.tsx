@@ -9,7 +9,6 @@ import { ContinueCard } from './components/ContinueCard';
 import { DailyCaseCard } from './components/DailyCaseCard';
 import { GreetingHeader } from './components/GreetingHeader';
 import { LeaderboardCard } from './components/LeaderboardCard';
-import { PathChip } from './components/PathChip';
 import { PerformanceCard } from './components/PerformanceCard';
 import { ProgressReadinessCard } from './components/ProgressReadinessCard';
 import { QuickAccess } from './components/QuickAccess';
@@ -42,10 +41,7 @@ export function DashboardScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <View style={styles.headerSection}>
-            <PathChip label={data.pathLabel} emoji={data.pathEmoji} />
-            <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} />
-          </View>
+          <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} />
 
           <ContinueCard
             subject={data.nextLesson.subject}
@@ -118,11 +114,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: Spacing.four,
-  },
-  // Tighter than the standard section gap above — the path chip and
-  // greeting read as one header block, not two separate sections.
-  headerSection: {
-    gap: Spacing.two,
   },
   columns: {
     flexDirection: 'row',

@@ -1,4 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
@@ -13,9 +15,10 @@ function getGreeting(): string {
 }
 
 // Matches the real desktop greeting row: "Your Dashboard" eyebrow pill +
-// greeting on the left, a static path badge (today's path + its real
-// emoji, no chevron) on the right — distinct from the header's PathChip
-// dropdown above this, which is the actual path *switcher*.
+// greeting on the left, the current-path badge on the right. This is now
+// the only path indicator on the screen — the separate full-width PathChip
+// row above it was a duplicate of the same "MCAT Preparation" label and
+// got removed, so this badge is the real switcher now (hence the chevron).
 export function GreetingHeader({
   name,
   pathLabel,
@@ -26,6 +29,7 @@ export function GreetingHeader({
   pathEmoji: string;
 }) {
   const theme = useTheme();
+  const [open, setOpen] = useState(false);
   return (
     <View style={styles.row}>
       <View style={styles.col}>
@@ -34,17 +38,28 @@ export function GreetingHeader({
           {getGreeting()}, {name} 👋
         </ThemedText>
       </View>
-      <View
-        style={[
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        accessibilityRole="button"
+        accessibilityLabel={`Current learning path: ${pathLabel}`}
+        accessibilityState={{ expanded: open }}
+        style={({ pressed }) => [
           styles.pathBadge,
           { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           Shadow.card,
+          pressed && styles.pathBadgePressed,
         ]}>
         <ThemedText style={styles.pathEmoji}>{pathEmoji}</ThemedText>
         <ThemedText style={styles.pathLabel} numberOfLines={1}>
           {pathLabel}
         </ThemedText>
-      </View>
+        <Ionicons
+          name="chevron-down"
+          size={13}
+          color={theme.textSecondary}
+          style={open ? styles.chevronOpen : undefined}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -74,14 +89,22 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    maxWidth: 130,
+    maxWidth: 150,
     marginTop: 2,
+    minHeight: 44,
+  },
+  pathBadgePressed: {
+    opacity: 0.7,
   },
   pathEmoji: {
     fontSize: 12,
   },
   pathLabel: {
+    flexShrink: 1,
     fontSize: 11,
     fontWeight: '800',
+  },
+  chevronOpen: {
+    transform: [{ rotate: '180deg' }],
   },
 });
