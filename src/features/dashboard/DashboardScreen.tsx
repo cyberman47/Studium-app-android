@@ -15,14 +15,12 @@ import { QuickAccess } from './components/QuickAccess';
 import { RecommendedTodayCard } from './components/RecommendedTodayCard';
 import { mockDashboard } from './data';
 
-// The phone-oriented equivalent of the web app's /dashboard home page —
-// matches its real two-column mid-page arrangement (Study Planner +
-// Recommended for Today on the left, Daily Case + Leaderboard +
-// Performance on the right) rather than one long single-column stack,
-// with Continue Studying as a full-width hero above it and Quick Access
-// as a full-width row below. Every section is a single component in
-// ./components, so swapping mockDashboard for a real data hook later
-// only touches this file, not the sections themselves.
+// A single-column stack, ordered by "what should I do right now": Continue
+// Studying first (the one thing that matters most), then today's study
+// plan progress, then the Daily Case, then a one-line leaderboard glance.
+// Secondary material (a specific recommendation, the fuller performance
+// summary) sits further down, still reachable but not competing for
+// attention with the primary flow above it.
 export function DashboardScreen() {
   const theme = useTheme();
   const data = mockDashboard;
@@ -50,45 +48,33 @@ export function DashboardScreen() {
             total={data.nextLesson.total}
           />
 
-          <View style={styles.columns}>
-            <View style={styles.column}>
-              <ProgressReadinessCard
-                daysToExam={data.daysToExam}
-                todayKP={data.todayKP}
-                targetKP={data.targetKP}
-                examReadinessPercent={data.examReadinessPercent}
-                overallMasteryPercent={data.overallMasteryPercent}
-                studyTimeToday={data.studyTimeToday}
-                studyTimeThisWeek={data.studyTimeThisWeek}
-                weeklyKP={data.weeklyKP}
-                weeklyActivity={data.weeklyActivity}
-              />
+          <ProgressReadinessCard
+            daysToExam={data.daysToExam}
+            todayKP={data.todayKP}
+            targetKP={data.targetKP}
+          />
 
-              <RecommendedTodayCard
-                subjectName={data.recommended.subjectName}
-                label={data.recommended.label}
-                kp={data.recommended.kp}
-                minutes={data.recommended.minutes}
-              />
-            </View>
+          <DailyCaseCard
+            title={data.dailyCase.title}
+            category={data.dailyCase.category}
+            difficulty={data.dailyCase.difficulty}
+          />
 
-            <View style={styles.column}>
-              <DailyCaseCard
-                title={data.dailyCase.title}
-                category={data.dailyCase.category}
-                difficulty={data.dailyCase.difficulty}
-              />
+          <LeaderboardCard rows={data.leaderboard} minimal />
 
-              <LeaderboardCard rows={data.leaderboard} compact />
+          <RecommendedTodayCard
+            subjectName={data.recommended.subjectName}
+            label={data.recommended.label}
+            kp={data.recommended.kp}
+            minutes={data.recommended.minutes}
+          />
 
-              <PerformanceCard
-                level={data.level}
-                levelName={data.levelName}
-                totalKP={data.totalKP}
-                focusAreas={data.focusAreas.slice(0, 1)}
-              />
-            </View>
-          </View>
+          <PerformanceCard
+            level={data.level}
+            levelName={data.levelName}
+            totalKP={data.totalKP}
+            focusAreas={data.focusAreas}
+          />
 
           <QuickAccess />
         </View>
@@ -114,14 +100,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: Spacing.four,
-  },
-  columns: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-  },
-  column: {
-    flex: 1,
-    minWidth: 0,
-    gap: Spacing.three,
   },
 });

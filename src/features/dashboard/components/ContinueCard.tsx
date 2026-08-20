@@ -25,15 +25,11 @@ export function ContinueCard({
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}>
-        <View style={styles.badge}>
-          <Ionicons name="flash" size={12} color="#FFFFFF" />
-          <ThemedText style={styles.badgeText}>Continue Studying</ThemedText>
-        </View>
-
         <View style={styles.textGroup}>
+          <ThemedText style={styles.eyebrow}>Continue studying</ThemedText>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={styles.subtitle}>
-            Next lesson · {completedCount} / {total} in {subject}
+            {subject} · Lesson {completedCount} of {total}
           </ThemedText>
         </View>
 
@@ -42,9 +38,9 @@ export function ContinueCard({
           accessibilityRole="button"
           accessibilityLabel={`Resume ${title}`}
           hitSlop={8}
-          style={({ pressed }) => [styles.resumeButton, pressed && styles.resumeButtonPressed]}>
-          <Ionicons name="play" size={13} color="#0C6C6E" />
+          style={({ pressed }) => [styles.resumeLink, pressed && styles.resumeLinkPressed]}>
           <ThemedText style={styles.resumeText}>Resume</ThemedText>
+          <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
         </Pressable>
       </LinearGradient>
     </View>
@@ -59,55 +55,42 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     // Tailwind p-5.
     padding: 20,
-    // Tailwind gap-3 — badge, title/subtitle group, and CTA all sit an
-    // even 12px apart instead of ad-hoc per-element margins.
-    gap: 12,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 5,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '800',
+    gap: Spacing.four,
   },
   textGroup: {
     gap: 4,
+  },
+  eyebrow: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '700',
   },
   title: {
     color: '#FFFFFF',
     fontSize: 20,
     fontWeight: '800',
     lineHeight: 26,
+    marginTop: 2,
   },
   subtitle: {
     color: 'rgba(255,255,255,0.78)',
     fontSize: 13,
   },
-  resumeButton: {
+  // A plain text link, not a pill button — the card is already the loudest
+  // element on the screen, so the CTA doesn't need its own container too.
+  resumeLink: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two + 2,
+    gap: 6,
     minHeight: 44,
   },
-  resumeButtonPressed: {
-    opacity: 0.85,
+  resumeLinkPressed: {
+    opacity: 0.7,
   },
   resumeText: {
-    color: '#0C6C6E',
-    fontSize: 14,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '800',
   },
 });

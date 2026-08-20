@@ -4,16 +4,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 
-// Each difficulty gets its own readable tint (translucent background +
-// matching light text color), not one uniform white/85 label regardless
-// of hue — the previous version was hard to read at a glance since amber
-// and rose both rendered in the same washed-out white.
-const difficultyStyles: Record<string, { bg: string; text: string }> = {
-  Beginner: { bg: 'rgba(16, 185, 129, 0.18)', text: '#6EE7B7' },
-  Intermediate: { bg: 'rgba(245, 158, 11, 0.18)', text: '#FCD34D' },
-  Advanced: { bg: 'rgba(244, 63, 94, 0.18)', text: '#FDA4AF' },
-};
-
 export function DailyCaseCard({
   title,
   category,
@@ -36,16 +26,11 @@ export function DailyCaseCard({
         />
         <ThemedText style={styles.eyebrow}>Daily Case Challenge</ThemedText>
 
-        <View style={styles.chipRow}>
-          <View style={styles.chip}>
-            <ThemedText style={styles.categoryChipText}>{category}</ThemedText>
-          </View>
-          <View style={[styles.chip, { backgroundColor: difficultyStyles[difficulty].bg }]}>
-            <ThemedText style={[styles.chipText, { color: difficultyStyles[difficulty].text }]}>
-              {difficulty}
-            </ThemedText>
-          </View>
-        </View>
+        {/* Small metadata line instead of two separate pills — same
+            information, one less pair of rounded containers to scan. */}
+        <ThemedText style={styles.meta}>
+          {category} · {difficulty}
+        </ThemedText>
 
         <ThemedText style={styles.title} numberOfLines={3}>
           {title}
@@ -56,8 +41,8 @@ export function DailyCaseCard({
           accessibilityRole="button"
           accessibilityLabel="Analyze today's case"
           hitSlop={8}
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}>
-          <ThemedText style={styles.buttonText}>Analyze Case</ThemedText>
+          style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}>
+          <ThemedText style={styles.linkText}>Analyze Case</ThemedText>
           <Ionicons name="arrow-forward" size={14} color="#5EEAD4" />
         </Pressable>
       </View>
@@ -87,26 +72,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-  chipRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: Spacing.two,
-  },
-  chip: {
-    // Bumped from /10 to /16 for better contrast against the dark card.
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 3,
-  },
-  chipText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  categoryChipText: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: 10,
-    fontWeight: '800',
+  meta: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 6,
   },
   title: {
     color: '#FFFFFF',
@@ -115,26 +85,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: Spacing.two,
   },
-  // A real secondary button now, not a bare text+icon link — same pill
-  // shape and touch target as the primary CTAs, just translucent instead
-  // of solid white since it sits on an already-dark card.
-  button: {
+  // Plain text link, matching ContinueCard's Resume — no pill background.
+  link: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(94, 234, 212, 0.14)',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two + 2,
+    gap: 6,
     marginTop: Spacing.three,
     minHeight: 44,
   },
-  buttonPressed: {
-    opacity: 0.75,
+  linkPressed: {
+    opacity: 0.7,
   },
-  buttonText: {
+  linkText: {
     color: '#5EEAD4',
     fontSize: 13,
     fontWeight: '800',

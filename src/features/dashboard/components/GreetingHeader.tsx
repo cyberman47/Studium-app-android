@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { EyebrowPill } from '@/components/eyebrow-pill';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -14,11 +13,9 @@ function getGreeting(): string {
   return 'Good evening';
 }
 
-// Matches the real desktop greeting row: "Your Dashboard" eyebrow pill +
-// greeting on the left, the current-path badge on the right. This is now
-// the only path indicator on the screen — the separate full-width PathChip
-// row above it was a duplicate of the same "MCAT Preparation" label and
-// got removed, so this badge is the real switcher now (hence the chevron).
+// Deliberately minimal: just the greeting and the path switcher stacked
+// underneath it. No "YOUR DASHBOARD" label — the user is obviously on the
+// dashboard, so that pill was pure noise above the one thing that matters.
 export function GreetingHeader({
   name,
   pathLabel,
@@ -31,13 +28,10 @@ export function GreetingHeader({
   const theme = useTheme();
   const [open, setOpen] = useState(false);
   return (
-    <View style={styles.row}>
-      <View style={styles.col}>
-        <EyebrowPill label="Your Dashboard" />
-        <ThemedText style={styles.greeting}>
-          {getGreeting()}, {name} 👋
-        </ThemedText>
-      </View>
+    <View style={styles.col}>
+      <ThemedText style={styles.greeting}>
+        {getGreeting()}, {name} 👋
+      </ThemedText>
       <Pressable
         onPress={() => setOpen((o) => !o)}
         accessibilityRole="button"
@@ -65,15 +59,9 @@ export function GreetingHeader({
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-  },
   col: {
-    flex: 1,
     gap: Spacing.two,
+    alignItems: 'flex-start',
   },
   greeting: {
     fontSize: 23,
@@ -89,9 +77,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    maxWidth: 150,
-    marginTop: 2,
-    minHeight: 44,
+    maxWidth: 200,
+    minHeight: 36,
   },
   pathBadgePressed: {
     opacity: 0.7,
