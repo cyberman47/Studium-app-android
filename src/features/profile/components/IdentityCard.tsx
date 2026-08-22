@@ -13,6 +13,8 @@ import { Card } from '@/features/dashboard/components/Card';
 export function IdentityCard({
   name,
   avatarInitial,
+  avatarColor,
+  bio,
   pathLabel,
   pathEmoji,
   level,
@@ -22,6 +24,8 @@ export function IdentityCard({
 }: {
   name: string;
   avatarInitial: string;
+  avatarColor?: string;
+  bio?: string;
   pathLabel: string;
   pathEmoji: string;
   level: number;
@@ -33,8 +37,13 @@ export function IdentityCard({
   return (
     <Card>
       <View style={styles.row}>
-        <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
-          <ThemedText themeColor="primary" style={styles.avatarText}>
+        <View
+          style={[
+            styles.avatar,
+            { backgroundColor: avatarColor ?? theme.primaryMuted },
+          ]}>
+          <ThemedText
+            style={[styles.avatarText, { color: avatarColor ? '#FFFFFF' : theme.primary }]}>
             {avatarInitial}
           </ThemedText>
         </View>
@@ -70,6 +79,12 @@ export function IdentityCard({
           <Ionicons name="share-outline" size={16} color={theme.textSecondary} />
         </Pressable>
       </View>
+
+      {bio ? (
+        <ThemedText themeColor="textSecondary" style={styles.bio}>
+          {bio}
+        </ThemedText>
+      ) : null}
 
       <View style={[styles.footer, { borderTopColor: theme.border }]}>
         <Ionicons name="calendar-outline" size={12} color={theme.textSecondary} />
@@ -137,6 +152,11 @@ const styles = StyleSheet.create({
   },
   shareButtonPressed: {
     opacity: 0.6,
+  },
+  bio: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 12,
   },
   footer: {
     flexDirection: 'row',

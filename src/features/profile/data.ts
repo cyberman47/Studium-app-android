@@ -37,7 +37,10 @@ export const mockProfile: ProfileData = {
   streakDays: 0,
   topicsMasteredCount: 0,
   achievementsUnlocked: 0,
-  achievementsTotal: 39,
+  // Matches the mock Passport list in features/passport/data.ts exactly
+  // (2 achievements × 7 categories) — kept in sync by hand since these
+  // are two different mock modules, same as the rest of this app.
+  achievementsTotal: 14,
   hasPosts: false,
   hasCommunityActivity: false,
 };
