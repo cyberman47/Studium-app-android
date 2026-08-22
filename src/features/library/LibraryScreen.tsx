@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,9 +19,17 @@ import { mockLibrary } from './data';
 // with its own accuracy/streak stats and an archive calendar — that's
 // already the Home dashboard's Daily Case card here, so it isn't
 // duplicated on this tab too.
+//
+// Every card and row is a real, working button now — each opens a
+// LibraryDetailScreen (app/libraryitem/[id].tsx) with real content.
 export function LibraryScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const data = mockLibrary;
+
+  function openItem(id: string) {
+    router.push(`/libraryitem/${id}`);
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -36,7 +45,7 @@ export function LibraryScreen() {
             </ThemedText>
           </View>
 
-          <LibraryCategoryGrid data={data} />
+          <LibraryCategoryGrid data={data} onPressCategory={openItem} />
 
           <View>
             <ThemedText themeColor="textSecondary" style={styles.label}>
@@ -49,6 +58,7 @@ export function LibraryScreen() {
                 iconBackground={theme.primaryMuted}
                 title="My Decks"
                 subtitle={`${data.decks} deck${data.decks === 1 ? '' : 's'}`}
+                onPress={() => openItem('decks')}
               />
               <ListRow
                 icon="flag-outline"
@@ -56,6 +66,7 @@ export function LibraryScreen() {
                 iconBackground={theme.primaryMuted}
                 title="Flagged Questions"
                 subtitle={`${data.flagged} flagged`}
+                onPress={() => openItem('flagged')}
               />
               <ListRow
                 icon="alert-circle-outline"
@@ -63,6 +74,7 @@ export function LibraryScreen() {
                 iconBackground={theme.roseMuted}
                 title="Mistake Vault"
                 subtitle={`${data.missed} to review`}
+                onPress={() => openItem('mistakes')}
               />
             </GroupedList>
           </View>

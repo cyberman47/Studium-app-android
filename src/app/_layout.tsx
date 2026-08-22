@@ -29,6 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="study-groups" options={{ presentation: 'card' }} />
         <Stack.Screen name="contribute" options={{ presentation: 'card' }} />
         <Stack.Screen name="track/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="libraryitem/[id]" options={{ presentation: 'card' }} />
       </Stack>
     </ThemeProvider>
   );
