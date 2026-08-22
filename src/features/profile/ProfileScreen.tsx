@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GroupedList } from '@/components/grouped-list';
 import { ListRow } from '@/components/list-row';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { IdentityCard } from './components/IdentityCard';
@@ -18,13 +18,57 @@ import { useEditableProfile } from './store';
 // The mobile equivalent of the web app's Community "My Profile" page
 // (app/dashboard/(main)/community/profile/page.tsx) — same identity, same
 // stats, same Passport and Recent Posts/Community Activity sections, plus
-// a grouped list into the rest of Community (Forum, Challenges, Study
+// a tile grid into the rest of Community (Forum, Challenges, Study
 // Groups, Contribute — lib/dashboardNav.ts's five Community children,
 // this tab being "My Profile"). Composed with the same "vary the visual
-// weight" language as the Home restructure: one card for identity, a
-// light tinted-chip row for the headline numbers, one more card for the
+// weight, and vary the visual pattern by what the content actually is"
+// language as the rest of this app: one card for identity, a light
+// tinted-chip row for the headline numbers, one more card for the
 // Passport (it's the one gamified feature here, so it earns the extra
-// presence), then two grouped lists instead of stacking near-empty cards.
+// presence), a list for the two activity feeds (Recent Posts/Community
+// Activity — those genuinely are feeds), and a tile grid for Community
+// (a hub you go somewhere from, not content you scan).
+// Community is a hub into four destinations, not a feed to scan — a 2x2
+// tile grid reads as "go somewhere" the way a settings-style list of
+// chevron rows doesn't.
+function CommunityTile({
+  icon,
+  iconColor,
+  iconBackground,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  iconBackground: string;
+  label: string;
+  onPress?: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={styles.tileWrap}>
+      <View style={[styles.tileShadow, Shadow.card]}>
+        <Pressable
+          onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          style={({ pressed }) => [
+            styles.tile,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            pressed && { backgroundColor: theme.backgroundSelected },
+          ]}>
+          <View style={[styles.tileIcon, { backgroundColor: iconBackground }]}>
+            <Ionicons name={icon} size={19} color={iconColor} />
+          </View>
+          <ThemedText numberOfLines={1} style={styles.tileLabel}>
+            {label}
+          </ThemedText>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -110,40 +154,36 @@ export function ProfileScreen() {
             <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
               COMMUNITY
             </ThemedText>
-            <GroupedList>
-              <ListRow
+            <View style={styles.communityGrid}>
+              <CommunityTile
                 icon="chatbubble-ellipses-outline"
                 iconColor={theme.primary}
                 iconBackground={theme.primaryMuted}
-                title="Forum"
-                subtitle="Ask questions, share what's working"
+                label="Forum"
                 onPress={() => router.push('/forum')}
               />
-              <ListRow
+              <CommunityTile
                 icon="trophy-outline"
                 iconColor={theme.amber}
                 iconBackground={theme.amberMuted}
-                title="Challenges"
-                subtitle="Join a challenge, track real progress"
+                label="Challenges"
                 onPress={() => router.push('/challenges')}
               />
-              <ListRow
+              <CommunityTile
                 icon="people-outline"
                 iconColor={theme.primary}
                 iconBackground={theme.primaryMuted}
-                title="Study Groups"
-                subtitle="Find your people, by subject or exam"
+                label="Study Groups"
                 onPress={() => router.push('/study-groups')}
               />
-              <ListRow
+              <CommunityTile
                 icon="add-circle-outline"
                 iconColor={theme.primary}
                 iconBackground={theme.primaryMuted}
-                title="Contribute"
-                subtitle="Publish lessons and study guides"
+                label="Contribute"
                 onPress={() => router.push('/contribute')}
               />
-            </GroupedList>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -208,5 +248,35 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.4,
     marginBottom: Spacing.two + 2,
+  },
+  communityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tileWrap: {
+    width: '47%',
+    flexGrow: 1,
+  },
+  tileShadow: {
+    borderRadius: Radius.lg,
+  },
+  tile: {
+    alignItems: 'center',
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 18,
+    gap: 8,
+  },
+  tileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileLabel: {
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

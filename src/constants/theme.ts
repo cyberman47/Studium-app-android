@@ -99,6 +99,10 @@ export const Radius = {
   sm: 10,
   md: 12,
   lg: 14,
+  // For the one or two "featured" surfaces per screen that should read as
+  // a size up from a standard card — a current-lesson card, a hero — not
+  // used for ordinary content cards, or the distinction disappears.
+  xl: 20,
   pill: 999,
 } as const;
 

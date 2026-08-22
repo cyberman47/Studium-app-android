@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MasteryBar } from '@/components/mastery-bar';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
@@ -32,9 +33,12 @@ export function PassportScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
           <ScreenHeader title="Full Passport" />
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            {unlockedCount} of {mockAchievements.length} unlocked
-          </ThemedText>
+          <View style={styles.progressBlock}>
+            <ThemedText style={styles.progressStat}>
+              {unlockedCount} <ThemedText themeColor="textSecondary" style={styles.progressStatUnit}>of {mockAchievements.length} unlocked</ThemedText>
+            </ThemedText>
+            <MasteryBar percent={Math.round((unlockedCount / mockAchievements.length) * 100)} color={theme.primary} />
+          </View>
 
           <ScrollView
             horizontal
@@ -129,7 +133,15 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     gap: 12,
   },
-  subtitle: {
+  progressBlock: {
+    gap: 8,
+  },
+  progressStat: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  progressStatUnit: {
     fontSize: 13,
     fontWeight: '500',
   },

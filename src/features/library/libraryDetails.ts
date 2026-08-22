@@ -1,7 +1,8 @@
 import type { Ionicons } from '@expo/vector-icons';
 
+// 'lessons' is deliberately excluded — it's handled by AllLessonsScreen /
+// curriculum.ts's own richer data model, not this generic row list.
 export type LibraryItemId =
-  | 'lessons'
   | 'saved'
   | 'recent'
   | 'community'
@@ -29,22 +30,6 @@ export type LibraryDetail = {
  * the rest of this app's mock-data screens.
  */
 export const libraryDetails: Record<LibraryItemId, LibraryDetail> = {
-  lessons: {
-    title: 'All Lessons',
-    description: 'Every official Studium lesson. Only MCAT → Biology has real, completable lessons today.',
-    icon: 'book-outline',
-    rows: [
-      { title: 'Cell Structure & Organelles', subtitle: 'Biology · Completed' },
-      { title: 'Cell Communication & Signaling', subtitle: 'Biology · Completed' },
-      { title: 'Cell Cycle, Mitosis & Meiosis', subtitle: 'Biology · Completed' },
-      { title: 'Mendelian Genetics & Inheritance', subtitle: 'Biology · Completed' },
-      { title: 'Cell Membranes & Transport', subtitle: 'Biology · In progress' },
-      { title: 'DNA Replication & Repair', subtitle: 'Biology · Locked' },
-      { title: 'Transcription & RNA', subtitle: 'Biology · Locked' },
-      { title: 'Translation & Protein Synthesis', subtitle: 'Biology · Locked' },
-      { title: 'Gene Regulation & Mutations', subtitle: 'Biology · Locked' },
-    ],
-  },
   saved: {
     title: 'Saved',
     description: "Everything you've bookmarked — Studium and Community content together.",
