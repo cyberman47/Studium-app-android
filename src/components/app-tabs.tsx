@@ -31,7 +31,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="study">
-        <NativeTabs.Trigger.Label>Study</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Study Paths</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="map-outline" />,

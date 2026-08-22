@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,9 +12,12 @@ import { StudyingPathsSection } from './components/StudyingPathsSection';
 // (app/dashboard/(main)/learning-paths/page.tsx) — starts with just the
 // "Browse Paths" grid; a "Continue" card for whichever track has real
 // per-lesson progress (MCAT → Biology on the web) is the natural next
-// addition here once the mobile app reads real lesson content.
+// addition here once the mobile app reads real lesson content. Every
+// card is a real, working button now — it opens that track's detail
+// screen (app/track/[id].tsx).
 export function StudyScreen() {
   const theme = useTheme();
+  const router = useRouter();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -23,13 +27,13 @@ export function StudyScreen() {
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
           <View style={styles.header}>
-            <ThemedText style={styles.title}>Study</ThemedText>
+            <ThemedText style={styles.title}>Study Paths</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
               A guided route through what to study next.
             </ThemedText>
           </View>
 
-          <StudyingPathsSection />
+          <StudyingPathsSection onPressTrack={(id) => router.push(`/track/${id}`)} />
         </View>
       </ScrollView>
     </SafeAreaView>

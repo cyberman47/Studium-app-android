@@ -5,30 +5,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Mirrors the web app's Learning Paths "Browse Paths" grid
-// (app/dashboard/(main)/learning-paths/page.tsx) — same seven tracks, same
-// per-track color so students can tell them apart at a glance, same
-// "Current" badge on whichever one matches the active path. Real lesson
-// counts live in lib/*Path.ts on the web; this mirrors those with
-// representative numbers until the mobile app reads real content.
-const tracks: {
-  name: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  meta: string;
-  bg: string;
-  fg: string;
-  current?: boolean;
-}[] = [
-  { name: 'MCAT', icon: 'clipboard-outline', meta: '6 Sections · 190 Lessons', bg: 'rgba(124, 58, 237, 0.12)', fg: '#7C3AED', current: true },
-  { name: 'Medical School', icon: 'school-outline', meta: '8 Topics', bg: 'rgba(15, 139, 141, 0.12)', fg: '#0F8B8D' },
-  { name: 'Nursing', icon: 'heart-outline', meta: '9 Topics', bg: 'rgba(219, 39, 119, 0.12)', fg: '#DB2777' },
-  { name: 'Anatomy', icon: 'body-outline', meta: '7 Regions', bg: 'rgba(225, 29, 72, 0.12)', fg: '#E11D48' },
-  { name: 'Pharmacology', icon: 'medkit-outline', meta: '6 Topics', bg: 'rgba(79, 70, 229, 0.12)', fg: '#4F46E5' },
-  { name: 'Medical Cases', icon: 'pulse-outline', meta: '12 Cases', bg: 'rgba(244, 63, 94, 0.12)', fg: '#F43F5E' },
-  { name: 'USMLE', icon: 'medal-outline', meta: '9 Topics', bg: 'rgba(217, 119, 6, 0.12)', fg: '#D97706' },
-];
+import { type Track, type TrackId, tracks } from '../tracks';
 
-function TrackCard({ track, onPress }: { track: (typeof tracks)[number]; onPress?: () => void }) {
+function TrackCard({ track, onPress }: { track: Track; onPress?: () => void }) {
   const theme = useTheme();
   return (
     <View style={[styles.shadowWrap, Shadow.card]}>
@@ -60,7 +39,14 @@ function TrackCard({ track, onPress }: { track: (typeof tracks)[number]; onPress
   );
 }
 
-export function StudyingPathsSection({ onPressTrack }: { onPressTrack?: (name: string) => void }) {
+// Mirrors the web app's Learning Paths "Browse Paths" grid
+// (app/dashboard/(main)/learning-paths/page.tsx) — same seven tracks, same
+// per-track color so students can tell them apart at a glance, same
+// "Current" badge on whichever one matches the active path. Tapping a
+// card is real now: it routes to that track's detail screen
+// (app/track/[id].tsx), a real topic/lesson list mirrored from the web
+// app's lib/*Path.ts files.
+export function StudyingPathsSection({ onPressTrack }: { onPressTrack?: (id: TrackId) => void }) {
   return (
     <View>
       <ThemedText themeColor="textSecondary" style={styles.label}>
@@ -68,8 +54,8 @@ export function StudyingPathsSection({ onPressTrack }: { onPressTrack?: (name: s
       </ThemedText>
       <View style={styles.grid}>
         {tracks.map((track) => (
-          <View key={track.name} style={styles.gridItem}>
-            <TrackCard track={track} onPress={onPressTrack ? () => onPressTrack(track.name) : undefined} />
+          <View key={track.id} style={styles.gridItem}>
+            <TrackCard track={track} onPress={onPressTrack ? () => onPressTrack(track.id) : undefined} />
           </View>
         ))}
       </View>
