@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { signIn, signUp } from './store';
+import { fetchOnboardingComplete, signIn, signUp } from './store';
 
 type Mode = 'signup' | 'login';
 
@@ -20,9 +20,16 @@ type Mode = 'signup' | 'login';
 // at the bottom rather than two separate routes, since they share every
 // field and only differ in heading/CTA copy. Real Supabase auth (features/
 // auth/store.ts) — the same project studium-website uses — so an account
-// created here is a genuine account there too. On success the app-launch
-// gate's own listener would eventually pick up the new session, but
-// navigating to Home explicitly keeps this button's response immediate.
+// created here is a genuine account there too.
+//
+// submit() decides Home vs Onboarding itself and navigates straight there
+// — it used to always go to '/' and rely on the app-launch gate's own
+// reactive listener to correct a fresh signup over to Onboarding a moment
+// later, which was visible as a real flash of the dashboard for a split
+// second first. A signup is always onboarding_complete=false (the
+// profiles trigger defaults it, so there's nothing to check), and a login
+// checks the real value directly before moving, so the correct screen is
+// the first and only thing that ever renders.
 export function AuthScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -62,10 +69,15 @@ export function AuthScreen() {
           setAwaitingConfirmation(true);
           return;
         }
+        // A brand-new account is always onboarding_complete=false — no
+        // need to ask, and asking would just be a slower way to arrive at
+        // the same place.
+        router.replace('/onboarding');
       } else {
-        await signIn(trimmedEmail, password);
+        const { userId } = await signIn(trimmedEmail, password);
+        const onboardingComplete = await fetchOnboardingComplete(userId);
+        router.replace(onboardingComplete ? '/' : '/onboarding');
       }
-      router.replace('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {

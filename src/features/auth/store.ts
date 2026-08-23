@@ -96,8 +96,21 @@ export async function signUp(email: string, password: string) {
 }
 
 export async function signIn(email: string, password: string) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
+  return { userId: data.user.id };
+}
+
+// A direct, one-off read — deliberately not routed through the reactive
+// `state.onboardingComplete` above. AuthScreen calls this right after
+// signIn/signUp to decide where to navigate *before* it moves at all;
+// waiting on the reactive value instead would mean landing on Home first
+// and only correcting to Onboarding once that background fetch resolved
+// a moment later — a real, visible flash of the dashboard that used to
+// happen here.
+export async function fetchOnboardingComplete(userId: string): Promise<boolean> {
+  const { data } = await supabase.from('profiles').select('onboarding_complete').eq('id', userId).maybeSingle();
+  return data?.onboarding_complete ?? false;
 }
 
 export async function logOut() {
