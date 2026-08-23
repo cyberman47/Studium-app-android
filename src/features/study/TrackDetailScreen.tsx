@@ -5,7 +5,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { LessonGrid } from '@/features/study/components/LessonGrid';
-import { MCATSectionGrid } from '@/features/study/components/MCATSectionGrid';
+import { MCATSectionList } from '@/features/study/components/MCATSectionList';
 import { useTheme } from '@/hooks/use-theme';
 
 import { findTrack } from './tracks';
@@ -23,7 +23,7 @@ import { trackDetails } from './trackDetails';
 // (see git history for the exact previous markup) — nothing else in the
 // app depends on this screen's layout choice.
 //
-// MCAT only gets a further, more detailed redesign (MCATSectionGrid) per
+// MCAT only gets a further, more detailed redesign (MCATSectionList) per
 // a follow-up request scoped explicitly to just that one track — every
 // other track keeps the plainer LessonGrid.
 export function TrackDetailScreen({ id }: { id: string }) {
@@ -64,7 +64,7 @@ export function TrackDetailScreen({ id }: { id: string }) {
           </ThemedText>
 
           {track.id === 'mcat' ? (
-            <MCATSectionGrid />
+            <MCATSectionList />
           ) : (
             <LessonGrid items={detail.rows} icon={track.icon} iconColor={track.fg} iconBackground={track.bg} />
           )}
