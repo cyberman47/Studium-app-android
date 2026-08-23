@@ -2,17 +2,18 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * A real (if backend-less) signed-in flag — same useSyncExternalStore
- * pattern as every other store in this app. Defaults to true so the app
- * keeps opening straight to Home like it always has; Log Out (More >
- * Account) is what actually flips it, and the Sign Up/Log In screen
- * (features/auth/AuthScreen.tsx) flips it back. There's no real backend
- * behind this yet — no Supabase, no token — so "logged out" here means
- * "showing the signed-out screen", not an enforced gate on the rest of the
- * app; that's the same honesty this app already applies to its other
- * mock-data screens (Notifications, AI chat, etc.).
+ * pattern as every other store in this app. Defaults to false: the
+ * Welcome screen (features/auth/WelcomeScreen.tsx) is meant to be the
+ * actual first thing anyone sees when they open the app (see the
+ * launch-time gate in app/_layout.tsx), not something only reachable via
+ * Log Out. There's no persistence layer behind this yet — no Supabase, no
+ * token, nothing surviving a cold start — so every fresh launch honestly
+ * starts signed out, same as every other mock-data piece of this app;
+ * logIn()/logOut() just flip this in-memory flag for the rest of that
+ * running session.
  */
 
-let isLoggedIn = true;
+let isLoggedIn = false;
 const listeners = new Set<() => void>();
 
 function emit() {

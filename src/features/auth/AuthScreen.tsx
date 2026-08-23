@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,10 +13,12 @@ import { logIn } from './store';
 
 type Mode = 'signup' | 'login';
 
-// Where Log Out (More > Account) lands, and also reachable directly. One
-// screen, two modes toggled by the link at the bottom — the same shape as
-// most apps' auth flow — rather than two separate routes, since they share
-// every field and only differ in heading/CTA copy. There's no real backend
+// The actual signup/login form, reached from WelcomeScreen's "Get Started"
+// (mode=signup) or "I already have an account" (mode=login) — unlike that
+// screen, this one keeps its back button, since you genuinely can return to
+// the welcome screen from here. One screen, two modes toggled by the link
+// at the bottom rather than two separate routes, since they share every
+// field and only differ in heading/CTA copy. There's no real backend
 // behind this yet (see features/auth/store.ts): submitting either form
 // just flips the local signed-in flag and returns to Home, honestly no
 // different from every other mock-data screen in this app, not pretending
@@ -24,7 +26,8 @@ type Mode = 'signup' | 'login';
 export function AuthScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>('signup');
+  const { mode: initialMode } = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<Mode>(initialMode === 'login' ? 'login' : 'signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);

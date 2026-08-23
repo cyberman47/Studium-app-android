@@ -1,5 +1,5 @@
-import { AuthScreen } from '@/features/auth/AuthScreen';
+import { WelcomeScreen } from '@/features/auth/WelcomeScreen';
 
 export default function Signup() {
-  return <AuthScreen />;
+  return <WelcomeScreen />;
 }

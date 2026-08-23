@@ -1,18 +1,40 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { useIsLoggedIn } from '@/features/auth/store';
 
 SplashScreen.preventAutoHideAsync();
+
+// Launch-time auth gate: an unauthenticated session gets bounced to the
+// Welcome screen (features/auth/WelcomeScreen.tsx, at /signup) instead of
+// landing on Home — checked once, on mount, not reactively, since this is
+// a one-time "where does the app open to" decision, not full per-screen
+// route protection. The redirect fires within milliseconds of mount, well
+// inside AnimatedSplashOverlay's ~600ms+ cover window above it, so there's
+// no visible flash of Home before the swap.
+function AuthGate() {
+  const router = useRouter();
+  const isLoggedIn = useIsLoggedIn();
+
+  useEffect(() => {
+    if (!isLoggedIn) router.replace('/signup');
+    // Only ever check the state as it was at launch — see note above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return null;
+}
 
 // A root Stack wrapping the (tabs) group (the 5-tab NativeTabs bar) so
 // screens that live outside the bottom nav — Settings, Passport, Forum,
 // Challenges, Study Groups, Contribute, More and its own children
-// (Notifications, Invite, Help, About), Studium AI chat, and the
-// note/flashcard creation + My Content screens reached from Home's "+" —
-// have somewhere to push onto. NativeTabs alone (the previous
-// setup here) has no concept of a screen outside its own declared
+// (Notifications, Invite, Help, About), Studium AI chat, the note/flashcard
+// creation + My Content screens reached from Home's "+", and the Welcome/
+// Auth screens — have somewhere to push onto. NativeTabs alone (the
+// previous setup here) has no concept of a screen outside its own declared
 // triggers, so router.push('/settings') silently went nowhere before
 // this existed. Every pushed screen hides the native header and renders
 // its own ScreenHeader (src/components/screen-header.tsx) instead, for
@@ -22,6 +44,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
+      <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
@@ -45,6 +68,7 @@ export default function RootLayout() {
         <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
         <Stack.Screen name="signup" options={{ presentation: 'card' }} />
+        <Stack.Screen name="auth" options={{ presentation: 'card' }} />
       </Stack>
     </ThemeProvider>
   );
