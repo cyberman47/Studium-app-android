@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, Radius, Shadow, Spacing } from '@/constants/theme';
+import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Two floating action buttons that sit above the tab bar on Home only:
@@ -52,7 +52,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: BottomTabInset + Spacing.two,
+    // The tab bar already reserves its own space below this screen's
+    // SafeAreaView (it doesn't overlay content), so this only needs a
+    // small gap off the container's real bottom edge — not
+    // BottomTabInset again, which double-counted the tab bar height and
+    // left the buttons stranded mid-screen instead of anchored near the
+    // tab bar.
+    bottom: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -102,9 +102,11 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    // Extra clearance so QuickAccess (the last section) doesn't sit under
-    // the floating + / Ask AI buttons — see HomeFabs.
-    paddingBottom: BottomTabInset + Spacing.six,
+    // Base tab-bar clearance (matches every other list screen) plus room
+    // for the floating + / Ask AI buttons sitting just above it — see
+    // HomeFabs — so QuickAccess (the last section) doesn't end up hidden
+    // behind them when scrolled all the way down.
+    paddingBottom: BottomTabInset + Spacing.five + 64,
   },
   inner: {
     width: '100%',
