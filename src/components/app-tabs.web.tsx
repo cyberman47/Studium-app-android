@@ -27,11 +27,11 @@ export default function AppTabs() {
           <TabTrigger name="learn" href="/learn" asChild>
             <TabButton>Learn</TabButton>
           </TabTrigger>
-          <TabTrigger name="review" href="/review" asChild>
-            <TabButton>Review</TabButton>
-          </TabTrigger>
           <TabTrigger name="create" href="/create" asChild>
             <TabButton>Create</TabButton>
+          </TabTrigger>
+          <TabTrigger name="review" href="/review" asChild>
+            <TabButton>Review</TabButton>
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton>Profile</TabButton>

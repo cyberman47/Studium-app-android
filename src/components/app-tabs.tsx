@@ -7,9 +7,11 @@ import { Colors } from '@/constants/theme';
 // 5 tabs matching the desktop web app's own STUDY/REVIEW/TOOLS grouping,
 // translated into a mobile-appropriate hierarchy: Home ("what should I
 // study right now"), Learn (Learning Paths + Study Planner + Library —
-// "what am I learning"), Review (Flashcards + Quizzes + Terminology —
-// "what do I need to review"), Create ("what can I make/import"), Profile
-// ("how am I doing" — also where Progress and Passport now live).
+// "what am I learning"), Create ("what can I make/import"), Review
+// (Flashcards + Quizzes + Terminology — "what do I need to review"),
+// Profile ("how am I doing" — also where Progress and Passport now
+// live). Create sits before Review in the bar for visual balance (the
+// "+" glyph reads better in the middle three than at the edge).
 // Studium AI stays off this bar entirely, reached instead through the
 // floating "Ask AI" button on Home (see HomeFabs) so it's globally
 // reachable without spending a tab slot on it.
@@ -47,22 +49,22 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="review">
-        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat" />,
-          }}
-        />
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger name="create">
         <NativeTabs.Trigger.Label>Create</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
             default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="add-circle-outline" />,
             selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="add-circle" />,
+          }}
+        />
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="review">
+        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={{
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat" />,
           }}
         />
       </NativeTabs.Trigger>
