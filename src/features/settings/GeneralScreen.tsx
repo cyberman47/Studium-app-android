@@ -1,0 +1,103 @@
+import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { GroupedList } from '@/components/grouped-list';
+import { ListRow } from '@/components/list-row';
+import { ScreenHeader } from '@/components/screen-header';
+import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
+import { AppearanceMode, setAppearanceMode, useAppearanceMode } from '@/features/settings/appearanceStore';
+import { PillGroup } from '@/features/settings/components/PillGroup';
+import { SavedIndicator, useSavedFeedback } from '@/features/settings/components/SavedIndicator';
+import { languageOptions, setLanguage, useLanguage } from '@/features/settings/generalStore';
+import { useTheme } from '@/hooks/use-theme';
+
+const appearanceOptions: AppearanceMode[] = ['system', 'light', 'dark'];
+const appearanceLabels: Record<AppearanceMode, string> = { system: 'System', light: 'Light', dark: 'Dark' };
+
+// Settings > App > General. Appearance is the one real, working control
+// here — see features/settings/appearanceStore.ts — everything else on
+// this screen is honest local state. Notifications links to the existing
+// full Notifications screen (also reachable from More) rather than a
+// second copy of the same toggles living in two places at once.
+export function GeneralScreen() {
+  const theme = useTheme();
+  const router = useRouter();
+  const appearance = useAppearanceMode();
+  const language = useLanguage();
+  const { visible, trigger } = useSavedFeedback();
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.inner}>
+          <ScreenHeader title="General" />
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                LANGUAGE
+              </ThemedText>
+              <SavedIndicator visible={visible} />
+            </View>
+            <PillGroup
+              options={languageOptions}
+              selected={language}
+              onSelect={(value) => {
+                setLanguage(value);
+                trigger();
+              }}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                APPEARANCE
+              </ThemedText>
+            </View>
+            <PillGroup
+              options={appearanceOptions}
+              selected={appearance}
+              getLabel={(v) => appearanceLabels[v as AppearanceMode]}
+              onSelect={(value) => {
+                setAppearanceMode(value as AppearanceMode);
+                trigger();
+              }}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+              NOTIFICATIONS
+            </ThemedText>
+            <GroupedList>
+              <ListRow
+                icon="notifications-outline"
+                iconColor={theme.primary}
+                iconBackground={theme.primaryMuted}
+                title="Notifications"
+                subtitle="Study reminders, streaks, community, and more"
+                onPress={() => router.push('/notifications')}
+              />
+            </GroupedList>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: { flex: 1 },
+  scroll: { flex: 1 },
+  content: { alignItems: 'center', paddingBottom: Spacing.six },
+  inner: { width: '100%', maxWidth: 800, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: 20 },
+  section: { gap: Spacing.two },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionLabel: { fontSize: 11, fontWeight: '500', letterSpacing: 0.4 },
+});

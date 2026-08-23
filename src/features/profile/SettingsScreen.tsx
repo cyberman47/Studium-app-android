@@ -11,6 +11,12 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { avatarColorOptions, updateEditableProfile, useEditableProfile } from './store';
 
+// Superseded by features/settings/AccountScreen.tsx (Settings > App >
+// Account), which folds this screen's avatar/name/bio editing into the new
+// three-category Settings hub (/settings) plus real password-change and
+// delete-account flows. No route points here anymore — kept on disk rather
+// than deleted since nothing else in this file is broken, only redundant.
+//
 // A real, working settings screen — not a placeholder. There's no
 // camera/photo-library access wired up yet, so "profile picture" here
 // means an avatar color for the initial letter rather than a real photo

@@ -58,6 +58,13 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-app" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-account" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-general" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-subscription" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-feedback" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-reader" options={{ presentation: 'card' }} />
+        <Stack.Screen name="settings-review" options={{ presentation: 'card' }} />
         <Stack.Screen name="passport" options={{ presentation: 'card' }} />
         <Stack.Screen name="forum" options={{ presentation: 'card' }} />
         <Stack.Screen name="challenges" options={{ presentation: 'card' }} />

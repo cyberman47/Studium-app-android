@@ -51,11 +51,11 @@ export function MoreScreen() {
             </ThemedText>
             <GroupedList>
               <ListRow
-                icon="person-outline"
+                icon="settings-outline"
                 iconColor={theme.primary}
                 iconBackground={theme.primaryMuted}
-                title="Your Profile"
-                subtitle="Name, avatar, bio"
+                title="Settings"
+                subtitle="App, Reader, and Review preferences"
                 onPress={() => router.push('/settings')}
               />
             </GroupedList>
