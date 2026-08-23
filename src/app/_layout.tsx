@@ -44,6 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="new-note" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
+        <Stack.Screen name="signup" options={{ presentation: 'card' }} />
       </Stack>
     </ThemeProvider>
   );

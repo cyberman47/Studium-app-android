@@ -1,13 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GroupedList } from '@/components/grouped-list';
 import { ListRow } from '@/components/list-row';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { logOut } from '@/features/auth/store';
 
 // What the Profile tab's gear icon opens now — a real menu hub, not a
 // straight jump into profile editing. "Your Profile" (the avatar/
@@ -18,6 +20,13 @@ import { useTheme } from '@/hooks/use-theme';
 export function MoreScreen() {
   const theme = useTheme();
   const router = useRouter();
+
+  function handleLogOut() {
+    logOut();
+    // replace, not push — the point of logging out is that going back
+    // shouldn't drop you right back into the app you just left.
+    router.replace('/signup');
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -107,6 +116,21 @@ export function MoreScreen() {
               />
             </GroupedList>
           </View>
+
+          <Pressable
+            onPress={handleLogOut}
+            accessibilityRole="button"
+            accessibilityLabel="Log out"
+            style={({ pressed }) => [
+              styles.logOutButton,
+              { borderColor: theme.roseMuted },
+              pressed && { backgroundColor: theme.roseMuted },
+            ]}>
+            <Ionicons name="log-out-outline" size={16} color={theme.rose} />
+            <ThemedText themeColor="rose" style={styles.logOutText}>
+              Log Out
+            </ThemedText>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -139,5 +163,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.4,
     marginBottom: 2,
+  },
+  logOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: Radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 13,
+  },
+  logOutText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
