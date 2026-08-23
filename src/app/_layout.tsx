@@ -65,6 +65,7 @@ export default function RootLayout() {
         <Stack.Screen name="settings-feedback" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-reader" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-review" options={{ presentation: 'card' }} />
+        <Stack.Screen name="leaderboard" options={{ presentation: 'card' }} />
         <Stack.Screen name="passport" options={{ presentation: 'card' }} />
         <Stack.Screen name="forum" options={{ presentation: 'card' }} />
         <Stack.Screen name="challenges" options={{ presentation: 'card' }} />

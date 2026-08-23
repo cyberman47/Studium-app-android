@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { type PathId, pathOptions } from '@/constants/paths';
@@ -23,31 +25,54 @@ function getGreeting(): string {
 // same "Currently studying / Change to" picker as the web app's
 // LearningPathSwitcher (components/dashboard-shell.tsx), listing all
 // seven tracks from constants/paths.ts.
+//
+// `loading` skeletons the greeting name and the path badge — both come
+// from the real Supabase fetch (dashboard/remote.ts), and Home renders
+// this component immediately with mock-fallback values while that's in
+// flight, so without a loading state a student would briefly see a
+// stranger's mock name/path before it corrects itself.
 export function GreetingHeader({
   name,
   pathLabel,
   pathEmoji,
+  loading = false,
 }: {
   name: string;
   pathLabel: string;
   pathEmoji: string;
+  loading?: boolean;
 }) {
   const theme = useTheme();
   const [modalOpen, setModalOpen] = useState(false);
-  // Seeded from props (the mock "currently studying" path) but owns the
-  // selection from here on — there's no backend to round-trip this
-  // through yet, same as every other mock-data screen in this app. The id
-  // has to be resolved up front (matched against pathOptions by label),
-  // not left null, or the "Change to" list below won't know to exclude
-  // the currently-studying option and shows it twice.
+  // Seeded from props (the mock "currently studying" path, since this
+  // mounts before the real fetch resolves) but owns the selection from
+  // here on — there's no backend to round-trip this through yet, same as
+  // every other mock-data screen in this app. The id has to be resolved
+  // up front (matched against pathOptions by label), not left null, or
+  // the "Change to" list below won't know to exclude the
+  // currently-studying option and shows it twice.
   const [selected, setSelected] = useState<{ id: PathId | null; label: string; emoji: string }>(() => {
     const match = pathOptions.find((p) => p.label === pathLabel);
     return { id: match?.id ?? null, label: pathLabel, emoji: pathEmoji };
   });
+  // Re-seeds `selected` once, the moment the real fetch resolves (loading
+  // flips false) — otherwise this component, mounted before that fetch
+  // finished, would keep showing the mock path label it was first seeded
+  // with forever. Skipped if the user already picked a different path
+  // themselves in the switcher, so a later stats refresh can't clobber
+  // that local choice.
+  const userChangedRef = useRef(false);
+  useEffect(() => {
+    if (loading || userChangedRef.current) return;
+    const match = pathOptions.find((p) => p.label === pathLabel);
+    setSelected({ id: match?.id ?? null, label: pathLabel, emoji: pathEmoji });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   function choose(id: PathId) {
     const option = pathOptions.find((p) => p.id === id);
     if (!option) return;
+    userChangedRef.current = true;
     setSelected({ id: option.id, label: option.label, emoji: option.emoji });
     setModalOpen(false);
   }
@@ -56,25 +81,37 @@ export function GreetingHeader({
 
   return (
     <View style={styles.col}>
-      <ThemedText style={styles.greeting}>
-        {getGreeting()}, {name} 👋
-      </ThemedText>
-      <Pressable
-        onPress={() => setModalOpen(true)}
-        accessibilityRole="button"
-        accessibilityLabel={`Current learning path: ${selected.label}. Tap to change.`}
-        accessibilityState={{ expanded: modalOpen }}
-        style={({ pressed }) => [
-          styles.pathBadge,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          pressed && styles.pathBadgePressed,
-        ]}>
-        <ThemedText style={styles.pathEmoji}>{selected.emoji}</ThemedText>
-        <ThemedText style={styles.pathLabel} numberOfLines={1}>
-          {selected.label}
-        </ThemedText>
-        <Ionicons name="chevron-down" size={13} color={theme.textSecondary} />
-      </Pressable>
+      {loading ? (
+        <Skeleton width={200} height={23} radius={6} />
+      ) : (
+        <Animated.View entering={FadeIn.duration(220)}>
+          <ThemedText style={styles.greeting}>
+            {getGreeting()}, {name} 👋
+          </ThemedText>
+        </Animated.View>
+      )}
+      {loading ? (
+        <Skeleton width={120} height={32} radius={Radius.pill} />
+      ) : (
+        <Animated.View entering={FadeIn.duration(220)}>
+          <Pressable
+            onPress={() => setModalOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={`Current learning path: ${selected.label}. Tap to change.`}
+            accessibilityState={{ expanded: modalOpen }}
+            style={({ pressed }) => [
+              styles.pathBadge,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              pressed && styles.pathBadgePressed,
+            ]}>
+            <ThemedText style={styles.pathEmoji}>{selected.emoji}</ThemedText>
+            <ThemedText style={styles.pathLabel} numberOfLines={1}>
+              {selected.label}
+            </ThemedText>
+            <Ionicons name="chevron-down" size={13} color={theme.textSecondary} />
+          </Pressable>
+        </Animated.View>
+      )}
 
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
         <Pressable style={styles.overlay} onPress={() => setModalOpen(false)}>

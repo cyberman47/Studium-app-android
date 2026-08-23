@@ -36,7 +36,7 @@ export function DashboardScreen() {
   // exam) has no real per-user backend yet, so it stays mock regardless.
   // Falls back to the mock identity fields while the fetch is in flight
   // right after login, rather than a blank/zeroed header.
-  const { stats } = useRealDashboardStats();
+  const { loading, stats } = useRealDashboardStats();
   const data: DashboardData = stats
     ? {
         ...mockDashboard,
@@ -69,13 +69,14 @@ export function DashboardScreen() {
         streakDays={data.streakDays}
         todayKP={data.todayKP}
         targetKP={data.targetKP}
+        loading={loading}
       />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} />
+          <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} loading={loading} />
 
           <ContinueCard
             subject={data.nextLesson.subject}
@@ -97,6 +98,8 @@ export function DashboardScreen() {
             topLeaderboardRow={data.leaderboard[0]}
             recommended={data.recommended}
             performance={{ level: data.level, levelName: data.levelName, totalKP: data.totalKP }}
+            loading={loading}
+            onPressLeaderboard={() => router.push('/leaderboard')}
             onPressPerformance={goToProgress}
           />
 
