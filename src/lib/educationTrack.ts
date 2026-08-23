@@ -44,3 +44,26 @@ export function educationTrackLabel(value: string | null | undefined): string {
 export function educationTrackEmoji(value: string | null | undefined): string {
   return value && isEducationTrack(value) ? EMOJI[value] : EMOJI.mcat;
 }
+
+// Bridges onboarding's multi-select "What are you studying for?" (its own
+// wording — MCAT/Medical School/USMLE/Nursing/Anatomy/General Medical
+// Knowledge/Other) onto the single-select education_track column. Priority
+// favors MCAT first since it's the only track with a fully authored
+// curriculum today — picking it when a student selected multiple options
+// gives them the most complete experience by default; they can change
+// tracks later (once mobile has a track switcher — not built yet).
+const STUDYING_FOR_TO_TRACK: Record<string, EducationTrack> = {
+  MCAT: 'mcat',
+  'Medical School': 'medical-school',
+  USMLE: 'medical-school',
+  Nursing: 'nursing',
+  Anatomy: 'other',
+  'General Medical Knowledge': 'other',
+  Other: 'other',
+};
+const STUDYING_FOR_PRIORITY = ['MCAT', 'Medical School', 'USMLE', 'Nursing', 'Anatomy', 'General Medical Knowledge', 'Other'];
+
+export function studyingForToEducationTrack(selections: string[]): EducationTrack {
+  const picked = STUDYING_FOR_PRIORITY.find((option) => selections.includes(option));
+  return picked ? STUDYING_FOR_TO_TRACK[picked] : 'mcat';
+}

@@ -8,25 +8,32 @@ import { useAuthState } from '@/features/auth/store';
 
 SplashScreen.preventAutoHideAsync();
 
-// Launch-time auth gate: an unauthenticated session gets bounced to the
-// Welcome screen (features/auth/WelcomeScreen.tsx, at /signup) instead of
-// landing on Home. Reacts to real Supabase auth state (features/auth/
-// store.ts) rather than checking once — status starts 'loading' while a
-// persisted session restores from AsyncStorage (async, so it can't be
-// known synchronously at mount), and only resolves to 'authenticated' or
-// 'unauthenticated' once that finishes; this effect only acts on the
-// resolved 'unauthenticated' case; being reactive (not a one-shot check)
-// also means it correctly bounces the student out if a session ever gets
-// invalidated later during the app's lifetime, not just at launch.
-// AnimatedSplashOverlay's ~600ms+ cover window above this gives that
-// restore comfortably enough time to resolve before anything's visible.
+// Launch-time auth + onboarding gate: an unauthenticated session gets
+// bounced to the Welcome screen (features/auth/WelcomeScreen.tsx, at
+// /signup); an authenticated one that hasn't finished Onboarding
+// (features/onboarding/OnboardingScreen.tsx, at /onboarding — real
+// profiles.onboarding_complete, not a local flag) gets bounced there
+// instead of landing on Home. Reacts to real Supabase state rather than
+// checking once — both status and onboardingComplete start out
+// unresolved (status: 'loading', onboardingComplete: null) while their
+// restores/fetches are in flight, and this effect only acts once each has
+// actually resolved; being reactive (not a one-shot check) also means a
+// student who escapes onboarding via the hardware back button gets pulled
+// right back, and a session invalidated later in the app's lifetime still
+// bounces out correctly. AnimatedSplashOverlay's ~600ms+ cover window
+// above this gives the initial restore comfortably enough time to resolve
+// before anything's visible.
 function AuthGate() {
   const router = useRouter();
-  const { status } = useAuthState();
+  const { status, onboardingComplete } = useAuthState();
 
   useEffect(() => {
-    if (status === 'unauthenticated') router.replace('/signup');
-  }, [status, router]);
+    if (status === 'unauthenticated') {
+      router.replace('/signup');
+    } else if (status === 'authenticated' && onboardingComplete === false) {
+      router.replace('/onboarding');
+    }
+  }, [status, onboardingComplete, router]);
 
   return null;
 }
@@ -72,6 +79,7 @@ export default function RootLayout() {
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
         <Stack.Screen name="signup" options={{ presentation: 'card' }} />
         <Stack.Screen name="auth" options={{ presentation: 'card' }} />
+        <Stack.Screen name="onboarding" options={{ presentation: 'card' }} />
       </Stack>
     </ThemeProvider>
   );

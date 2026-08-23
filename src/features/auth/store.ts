@@ -10,15 +10,24 @@ import { supabase } from '@/lib/supabase';
  * deciding whether to show Home or the Welcome screen, so a returning,
  * still-logged-in student never gets bounced to Welcome just because the
  * check hadn't finished yet.
+ *
+ * onboardingComplete mirrors the real profiles.onboarding_complete column
+ * (supabase/migrations/0001_profiles.sql in studium-website — it already
+ * existed there, just unused until now). It's null until checked (fetched
+ * the moment a session resolves to authenticated) so the launch gate can
+ * tell "still checking" apart from "genuinely false" and doesn't bounce a
+ * fully onboarded student to Onboarding just because the read hadn't
+ * landed yet.
  */
 
 type AuthState = {
   status: 'loading' | 'authenticated' | 'unauthenticated';
   userId: string | null;
   email: string | null;
+  onboardingComplete: boolean | null;
 };
 
-let state: AuthState = { status: 'loading', userId: null, email: null };
+let state: AuthState = { status: 'loading', userId: null, email: null, onboardingComplete: null };
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -31,10 +40,27 @@ function subscribe(listener: () => void) {
 }
 
 function setFromSession(session: { user: { id: string; email?: string | null } } | null) {
-  state = session
-    ? { status: 'authenticated', userId: session.user.id, email: session.user.email ?? null }
-    : { status: 'unauthenticated', userId: null, email: null };
+  if (!session) {
+    state = { status: 'unauthenticated', userId: null, email: null, onboardingComplete: null };
+    emit();
+    return;
+  }
+  state = { status: 'authenticated', userId: session.user.id, email: session.user.email ?? null, onboardingComplete: null };
   emit();
+  const { id } = session.user;
+  supabase
+    .from('profiles')
+    .select('onboarding_complete')
+    .eq('id', id)
+    .maybeSingle()
+    .then(({ data }) => {
+      // Ignore a stale response that lands after a different user has
+      // since signed in (or signed out) — id-guard rather than a cancel
+      // flag, since setFromSession itself doesn't carry a cleanup handle.
+      if (state.userId !== id) return;
+      state = { ...state, onboardingComplete: data?.onboarding_complete ?? false };
+      emit();
+    });
 }
 
 // Populates the initial state as soon as the persisted session (if any)
@@ -45,6 +71,14 @@ supabase.auth.onAuthStateChange((_event, session) => setFromSession(session));
 
 export function useAuthState(): AuthState {
   return useSyncExternalStore(subscribe, () => state);
+}
+
+// Called once the onboarding flow's completion screen fires (features/
+// onboarding/store.ts) — flips the local copy immediately so the launch
+// gate stops redirecting to Onboarding without waiting on a fresh fetch.
+export function setOnboardingComplete() {
+  state = { ...state, onboardingComplete: true };
+  emit();
 }
 
 export function useIsLoggedIn(): boolean {
