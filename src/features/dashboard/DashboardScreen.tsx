@@ -62,12 +62,11 @@ export function DashboardScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
       <AppHeader
-        name={data.name}
-        avatarInitial={data.avatarInitial}
         streakDays={data.streakDays}
         todayKP={data.todayKP}
         targetKP={data.targetKP}
         loading={loading}
+        onPressStreak={goToProgress}
       />
       <ScrollView
         style={styles.scroll}

@@ -12,6 +12,13 @@ const menuItems = [
   { key: 'settings', label: 'Settings', icon: 'settings-outline' as const },
 ] as const;
 
+// Superseded: no longer rendered in AppHeader — removed per feedback
+// (Profile already has its own full bottom tab, and Settings/Logout
+// live under Profile's gear icon, so this dropdown was redundant, and
+// its Profile/Settings/Logout items never actually navigated anywhere
+// besides closing the menu). Left in place rather than deleted in case
+// an account-menu trigger is wanted again somewhere.
+//
 // The phone equivalent of the web header's UserMenu (components/
 // dashboard-shell.tsx) — same "Signed in as X / Profile / Settings /
 // Logout" shape. Uses a transparent Modal rather than an absolutely

@@ -2,7 +2,6 @@ import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { AvatarMenu } from '@/components/avatar-menu';
 import { Skeleton } from '@/components/skeleton';
 import { StreakBadge } from '@/components/streak-badge';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -14,23 +13,27 @@ import { useTheme } from '@/hooks/use-theme';
 // screen. Sits above the scroll content, not inside it, so it stays put
 // the way the web header does.
 //
-// `loading` skeletons just the streak badge + avatar — the two pieces
-// that come from the real Supabase fetch (see dashboard/remote.ts) — the
-// logo is a static asset, never a placeholder.
+// No avatar/account dropdown here anymore — the account menu (Profile /
+// Settings / Logout) is removed per feedback; Profile already has its
+// own full bottom tab, and Settings/Logout live under Profile's gear
+// icon, so nothing it offered is actually gone. The streak/KP pill is a
+// real button now, opening Progress — see onPressStreak.
+//
+// `loading` skeletons just the streak badge — the one piece that comes
+// from the real Supabase fetch (see dashboard/remote.ts) — the logo is a
+// static asset, never a placeholder.
 export function AppHeader({
-  name,
-  avatarInitial,
   streakDays,
   todayKP,
   targetKP,
   loading = false,
+  onPressStreak,
 }: {
-  name: string;
-  avatarInitial: string;
   streakDays: number;
   todayKP: number;
   targetKP: number;
   loading?: boolean;
+  onPressStreak?: () => void;
 }) {
   const theme = useTheme();
   return (
@@ -44,14 +47,10 @@ export function AppHeader({
           accessibilityLabel="Studium"
         />
         {loading ? (
-          <View style={styles.right}>
-            <Skeleton width={72} height={28} radius={Radius.pill} />
-            <Skeleton width={32} height={32} radius={16} />
-          </View>
+          <Skeleton width={72} height={28} radius={Radius.pill} />
         ) : (
-          <Animated.View entering={FadeIn.duration(220)} style={styles.right}>
-            <StreakBadge streakDays={streakDays} todayKP={todayKP} targetKP={targetKP} />
-            <AvatarMenu name={name} avatarInitial={avatarInitial} />
+          <Animated.View entering={FadeIn.duration(220)}>
+            <StreakBadge streakDays={streakDays} todayKP={todayKP} targetKP={targetKP} onPress={onPressStreak} />
           </Animated.View>
         )}
       </View>
@@ -77,10 +76,5 @@ const styles = StyleSheet.create({
   logo: {
     height: 28,
     aspectRatio: 779 / 303,
-  },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
 });
