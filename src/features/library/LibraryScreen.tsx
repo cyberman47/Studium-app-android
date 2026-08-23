@@ -4,8 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GroupedList } from '@/components/grouped-list';
 import { ListRow } from '@/components/list-row';
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useMyContent } from '@/features/mycontent/store';
@@ -24,6 +25,11 @@ import { mockLibrary } from './data';
 //
 // Every card and row is a real, working button now — each opens a
 // LibraryDetailScreen (app/libraryitem/[id].tsx) with real content.
+//
+// A plain pushed screen (/library) now, not a bottom tab — reached from
+// the Learn tab's "Library" section — so it uses ScreenHeader's
+// back-button instead of the bare title a tab screen doesn't need one
+// for.
 export function LibraryScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -37,7 +43,7 @@ export function LibraryScreen() {
   const myContentCount = notes.length + flashcardSets.length;
   const myContentSubtitle =
     myContentCount === 0
-      ? 'Tap + on Home to add your first note'
+      ? 'Add your first note or flashcard set from Create'
       : `${notes.length} note${notes.length === 1 ? '' : 's'} · ${flashcardSets.length} set${flashcardSets.length === 1 ? '' : 's'}`;
 
   return (
@@ -47,12 +53,10 @@ export function LibraryScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <ThemedText style={styles.title}>Library</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Explore lessons, articles, resources, and community content.
-            </ThemedText>
-          </View>
+          <ScreenHeader title="Library" />
+          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            Explore lessons, articles, resources, and community content.
+          </ThemedText>
 
           <LibraryCategoryGrid data={data} onPressCategory={openItem} />
 
@@ -110,7 +114,7 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingBottom: Spacing.six,
   },
   inner: {
     width: '100%',
@@ -118,16 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: 12,
-  },
-  header: {
-    gap: 2,
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 23,
-    fontWeight: '800',
-    lineHeight: 29,
-    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,

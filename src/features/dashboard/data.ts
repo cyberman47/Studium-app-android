@@ -40,7 +40,7 @@ export type DashboardData = {
     correctIndex: number;
     explanation: string;
   };
-  recommended: { subjectName: string; label: string; kp: number; minutes: number };
+  recommended: { subjectName: string; label: string; insight: string; kp: number; minutes: number };
   daysToExam: number;
   examReadinessPercent: number;
   overallMasteryPercent: number;
@@ -89,6 +89,7 @@ export const mockDashboard: DashboardData = {
   recommended: {
     subjectName: 'Biology',
     label: 'Lesson Review',
+    insight: 'Low confidence and low accuracy — major weakness',
     kp: 45,
     minutes: 25,
   },

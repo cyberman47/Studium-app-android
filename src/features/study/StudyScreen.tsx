@@ -2,8 +2,9 @@ import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { StudyingPathsSection } from './components/StudyingPathsSection';
@@ -15,6 +16,11 @@ import { StudyingPathsSection } from './components/StudyingPathsSection';
 // addition here once the mobile app reads real lesson content. Every
 // card is a real, working button now — it opens that track's detail
 // screen (app/track/[id].tsx).
+//
+// A plain pushed screen (/study-paths) now, not a bottom tab — reached
+// from the Learn tab's "Learning Paths" section — so it uses the same
+// ScreenHeader back-button every other pushed screen does instead of the
+// bare title a tab screen doesn't need a way back from.
 export function StudyScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -26,12 +32,10 @@ export function StudyScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <ThemedText style={styles.title}>Study Paths</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              A guided route through what to study next.
-            </ThemedText>
-          </View>
+          <ScreenHeader title="Study Paths" />
+          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            A guided route through what to study next.
+          </ThemedText>
 
           <StudyingPathsSection onPressTrack={(id) => router.push(`/track/${id}`)} />
         </View>
@@ -49,7 +53,7 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingBottom: Spacing.six,
   },
   inner: {
     width: '100%',
@@ -57,16 +61,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: 12,
-  },
-  header: {
-    gap: 2,
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 23,
-    fontWeight: '800',
-    lineHeight: 29,
-    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,

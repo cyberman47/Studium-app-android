@@ -9,25 +9,29 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import { mockProgress } from '@/features/progress/data';
+
 import { IdentityCard } from './components/IdentityCard';
 import { PassportCard } from './components/PassportCard';
+import { ProfileProgressCard } from './components/ProfileProgressCard';
 import { ProfileStatChips } from './components/ProfileStatChips';
 import { mockProfile } from './data';
 import { useEditableProfile } from './store';
 
-// The mobile equivalent of the web app's Community "My Profile" page
-// (app/dashboard/(main)/community/profile/page.tsx) — same identity, same
-// stats, same Passport and Recent Posts/Community Activity sections, plus
-// a tile grid into the rest of Community (Forum, Challenges, Study
-// Groups, Contribute — lib/dashboardNav.ts's five Community children,
-// this tab being "My Profile"). Composed with the same "vary the visual
-// weight, and vary the visual pattern by what the content actually is"
-// language as the rest of this app: one card for identity, a light
-// tinted-chip row for the headline numbers, one more card for the
-// Passport (it's the one gamified feature here, so it earns the extra
-// presence), a list for the two activity feeds (Recent Posts/Community
-// Activity — those genuinely are feeds), and a tile grid for Community
-// (a hub you go somewhere from, not content you scan).
+// "How am I doing?" — Profile's new role per the desktop-aligned IA:
+// besides the identity the web app's Community "My Profile" page
+// (app/dashboard/(main)/community/profile/page.tsx) already showed here,
+// this is now also where Progress and Passport live (Progress lost its
+// own bottom tab; Passport was always reached from here) plus quick
+// links to Leaderboard, Friends (Invite Friends), Settings, Subscription,
+// and Account — everything the desktop TOOLS group's "Progress /
+// Passport" pairing implies a mobile command center needs one tap away.
+// The existing Recent Posts/Community Activity feed and the Forum/
+// Challenges/Study Groups/Contribute tile grid stay exactly as they
+// were — nothing here was removed, only added above it. The gear icon
+// still opens /more (Notifications, Help & Support, About, Log Out) —
+// unchanged, so nothing already reachable from Profile stops being
+// reachable.
 // Community is a hub into four destinations, not a feed to scan — a 2x2
 // tile grid reads as "go somewhere" the way a settings-style list of
 // chevron rows doesn't.
@@ -117,12 +121,63 @@ export function ProfileScreen() {
 
           <ProfileStatChips totalKP={data.totalKP} streakDays={data.streakDays} />
 
+          <ProfileProgressCard
+            overallMasteryPercent={mockProgress.overallMasteryPercent}
+            studyTimeToday={mockProgress.studyTimeToday}
+            questionsAnswered={0}
+            accuracyPercent={null}
+            onViewProgress={() => router.push('/progress')}
+          />
+
           <PassportCard
             unlocked={data.achievementsUnlocked}
             total={data.achievementsTotal}
             topicsMasteredCount={data.topicsMasteredCount}
             onViewPassport={() => router.push('/passport')}
           />
+
+          <GroupedList>
+            <ListRow
+              icon="trophy-outline"
+              iconColor={theme.amber}
+              iconBackground={theme.amberMuted}
+              title="Leaderboard"
+              subtitle="See how you rank this week"
+              onPress={() => router.push('/leaderboard')}
+            />
+            <ListRow
+              icon="people-outline"
+              iconColor={theme.primary}
+              iconBackground={theme.primaryMuted}
+              title="Friends"
+              subtitle="Invite friends to study with you"
+              onPress={() => router.push('/invite')}
+            />
+            <ListRow
+              icon="settings-outline"
+              iconColor={theme.primary}
+              iconBackground={theme.primaryMuted}
+              title="Settings"
+              subtitle="App, Reader, and Review preferences"
+              onPress={() => router.push('/settings')}
+            />
+            <ListRow
+              icon="card-outline"
+              iconColor={theme.amber}
+              iconBackground={theme.amberMuted}
+              title="Subscription"
+              subtitle="Plan, billing, and renewal"
+              onPress={() => router.push('/settings-subscription')}
+            />
+            <ListRow
+              icon="person-circle-outline"
+              iconColor={theme.primary}
+              iconBackground={theme.primaryMuted}
+              title="Account"
+              subtitle="Name, email, password, and account details"
+              onPress={() => router.push('/settings-account')}
+            />
+          </GroupedList>
 
           <GroupedList>
             <ListRow

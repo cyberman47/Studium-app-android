@@ -5,7 +5,13 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// The bottom sheet Home's "+" button opens: add your own note or
+// Superseded: Home's "+" button now routes to the Create tab (see
+// features/create/CreateScreen.tsx) instead of opening this sheet — its
+// two options (New Note, New Flashcards) both moved there unchanged,
+// alongside three more. Left in place rather than deleted in case a
+// bottom-sheet quick-add is wanted again somewhere.
+//
+// The bottom sheet Home's "+" button used to open: add your own note or
 // flashcard set. RN's core Modal, no new dependency — same approach as
 // every other new-this-session screen (Share, Linking, Switch elsewhere).
 export function ImportSheet({

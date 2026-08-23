@@ -5,19 +5,23 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Replaces the old full-width "Study Plan" card with two compact chips —
-// days to exam, and today's KP with a thin progress bar — plus a small
-// text link below. A third "streak" chip would just repeat what the
-// header's streak pill already shows, so two chips wins on compactness.
+// Three compact stat chips — days to exam, today's KP (with its progress
+// bar), and study time today — instead of the previous two, matching the
+// desktop dashboard's own "Today's goal / Exam readiness / Study time
+// today" cluster. Deliberately tight typography (11-17pt) so three chips
+// fit one row without the section growing taller than the two-chip
+// version did.
 export function StatsRow({
   daysToExam,
   todayKP,
   targetKP,
+  studyTimeToday,
   onViewPlan,
 }: {
   daysToExam: number;
   todayKP: number;
   targetKP: number;
+  studyTimeToday: string;
   onViewPlan?: () => void;
 }) {
   const theme = useTheme();
@@ -27,35 +31,30 @@ export function StatsRow({
   return (
     <View>
       <View style={styles.row}>
-        <View
-          style={[
-            styles.chip,
-            styles.chipFlex,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
+        <View style={[styles.chip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <ThemedText style={styles.chipValue}>{daysToExam}</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.chipCaption}>
-            days until MCAT
+          <ThemedText themeColor="textSecondary" style={styles.chipCaption} numberOfLines={1}>
+            Days to exam
           </ThemedText>
         </View>
 
-        <View
-          style={[
-            styles.chip,
-            styles.chipFlex,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
+        <View style={[styles.chip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <ThemedText style={styles.chipValue}>
-            {todayKP}/{targetKP} <ThemedText style={styles.chipValueUnit}>KP</ThemedText>
+            {todayKP}/{targetKP}
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.chipCaption} numberOfLines={1}>
+            Today's KP
           </ThemedText>
           <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
-            <View
-              style={[
-                styles.fill,
-                { width: `${todayPercent}%`, backgroundColor: secured ? theme.primary : theme.amber },
-              ]}
-            />
+            <View style={[styles.fill, { width: `${todayPercent}%`, backgroundColor: secured ? theme.primary : theme.amber }]} />
           </View>
+        </View>
+
+        <View style={[styles.chip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <ThemedText style={styles.chipValue}>{studyTimeToday}</ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.chipCaption} numberOfLines={1}>
+            Study time
+          </ThemedText>
         </View>
       </View>
 
@@ -77,37 +76,32 @@ export function StatsRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: 12,
-  },
-  chipFlex: {
-    flex: 1,
+    gap: 8,
   },
   chip: {
+    flex: 1,
+    minWidth: 0,
     borderRadius: Radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.two,
-    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    gap: 5,
     minHeight: 64,
   },
   chipValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '800',
   },
-  chipValueUnit: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   chipCaption: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '500',
     textAlign: 'center',
   },
   track: {
     width: '80%',
-    height: 4,
+    height: 3,
     borderRadius: Radius.pill,
     overflow: 'hidden',
   },

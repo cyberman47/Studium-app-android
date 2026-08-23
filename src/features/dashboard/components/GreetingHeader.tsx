@@ -1,14 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PathSwitcher } from '@/components/path-switcher';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Radius, Shadow, Spacing } from '@/constants/theme';
-import { type PathId, pathOptions } from '@/constants/paths';
-import { useTheme } from '@/hooks/use-theme';
+import { Radius, Spacing } from '@/constants/theme';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -21,10 +17,9 @@ function getGreeting(): string {
 // underneath it. No "YOUR DASHBOARD" label — the user is obviously on the
 // dashboard, so that pill was pure noise above the one thing that matters.
 //
-// The badge is a real switcher, not just a label — tapping it opens the
-// same "Currently studying / Change to" picker as the web app's
-// LearningPathSwitcher (components/dashboard-shell.tsx), listing all
-// seven tracks from constants/paths.ts.
+// The path badge itself is PathSwitcher (components/path-switcher.tsx) —
+// shared with the Learn tab's header so both show/change the same track
+// picker rather than Learn inventing a second copy.
 //
 // `loading` skeletons the greeting name and the path badge — both come
 // from the real Supabase fetch (dashboard/remote.ts), and Home renders
@@ -42,43 +37,6 @@ export function GreetingHeader({
   pathEmoji: string;
   loading?: boolean;
 }) {
-  const theme = useTheme();
-  const [modalOpen, setModalOpen] = useState(false);
-  // Seeded from props (the mock "currently studying" path, since this
-  // mounts before the real fetch resolves) but owns the selection from
-  // here on — there's no backend to round-trip this through yet, same as
-  // every other mock-data screen in this app. The id has to be resolved
-  // up front (matched against pathOptions by label), not left null, or
-  // the "Change to" list below won't know to exclude the
-  // currently-studying option and shows it twice.
-  const [selected, setSelected] = useState<{ id: PathId | null; label: string; emoji: string }>(() => {
-    const match = pathOptions.find((p) => p.label === pathLabel);
-    return { id: match?.id ?? null, label: pathLabel, emoji: pathEmoji };
-  });
-  // Re-seeds `selected` once, the moment the real fetch resolves (loading
-  // flips false) — otherwise this component, mounted before that fetch
-  // finished, would keep showing the mock path label it was first seeded
-  // with forever. Skipped if the user already picked a different path
-  // themselves in the switcher, so a later stats refresh can't clobber
-  // that local choice.
-  const userChangedRef = useRef(false);
-  useEffect(() => {
-    if (loading || userChangedRef.current) return;
-    const match = pathOptions.find((p) => p.label === pathLabel);
-    setSelected({ id: match?.id ?? null, label: pathLabel, emoji: pathEmoji });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  function choose(id: PathId) {
-    const option = pathOptions.find((p) => p.id === id);
-    if (!option) return;
-    userChangedRef.current = true;
-    setSelected({ id: option.id, label: option.label, emoji: option.emoji });
-    setModalOpen(false);
-  }
-
-  const otherOptions = pathOptions.filter((p) => p.id !== selected.id);
-
   return (
     <View style={styles.col}>
       {loading ? (
@@ -94,62 +52,9 @@ export function GreetingHeader({
         <Skeleton width={120} height={32} radius={Radius.pill} />
       ) : (
         <Animated.View entering={FadeIn.duration(220)}>
-          <Pressable
-            onPress={() => setModalOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={`Current learning path: ${selected.label}. Tap to change.`}
-            accessibilityState={{ expanded: modalOpen }}
-            style={({ pressed }) => [
-              styles.pathBadge,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-              pressed && styles.pathBadgePressed,
-            ]}>
-            <ThemedText style={styles.pathEmoji}>{selected.emoji}</ThemedText>
-            <ThemedText style={styles.pathLabel} numberOfLines={1}>
-              {selected.label}
-            </ThemedText>
-            <Ionicons name="chevron-down" size={13} color={theme.textSecondary} />
-          </Pressable>
+          <PathSwitcher pathLabel={pathLabel} pathEmoji={pathEmoji} loading={loading} />
         </Animated.View>
       )}
-
-      <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
-        <Pressable style={styles.overlay} onPress={() => setModalOpen(false)}>
-          <SafeAreaView style={styles.sheetWrap} edges={['bottom']}>
-            <Pressable
-              // Swallows taps so pressing inside the sheet doesn't fall
-              // through to the overlay's dismiss handler.
-              onPress={(e) => e.stopPropagation()}
-              style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
-              <View style={styles.sheetHandle} />
-              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                Currently studying
-              </ThemedText>
-              <View style={[styles.currentRow, { backgroundColor: theme.primaryMuted }]}>
-                <ThemedText style={styles.rowEmoji}>{selected.emoji}</ThemedText>
-                <ThemedText themeColor="primary" style={styles.currentRowText}>
-                  {selected.label}
-                </ThemedText>
-              </View>
-
-              <ThemedText themeColor="textSecondary" style={[styles.sectionLabel, styles.changeToLabel]}>
-                Change to
-              </ThemedText>
-              {otherOptions.map((option) => (
-                <Pressable
-                  key={option.id}
-                  onPress={() => choose(option.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Switch to ${option.label}`}
-                  style={({ pressed }) => [styles.optionRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
-                  <ThemedText style={styles.rowEmoji}>{option.emoji}</ThemedText>
-                  <ThemedText style={styles.optionText}>{option.label}</ThemedText>
-                </Pressable>
-              ))}
-            </Pressable>
-          </SafeAreaView>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -164,89 +69,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     lineHeight: 29,
     letterSpacing: -0.3,
-  },
-  pathBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: Radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: 200,
-    minHeight: 32,
-  },
-  pathBadgePressed: {
-    opacity: 0.7,
-  },
-  pathEmoji: {
-    fontSize: 12,
-  },
-  pathLabel: {
-    flexShrink: 1,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  sheetWrap: {
-    width: '100%',
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.lg,
-    borderTopRightRadius: Radius.lg,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    ...Shadow.raised,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: 'rgba(148,163,184,0.4)',
-    marginBottom: Spacing.three,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: Spacing.two,
-  },
-  changeToLabel: {
-    marginTop: Spacing.three,
-  },
-  currentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two + 2,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
-  },
-  currentRowText: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two + 2,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
-    minHeight: 44,
-  },
-  rowEmoji: {
-    fontSize: 16,
-  },
-  optionText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
 });

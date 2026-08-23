@@ -1,8 +1,9 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { PerformanceCard } from './components/PerformanceCard';
@@ -15,6 +16,11 @@ import { mockProgress } from './data';
 // studying is going, so they live together on this one screen instead.
 // Both cards are the same full-detail components Home's compact StatsRow
 // and grouped-list "Level X" row point to.
+//
+// A plain pushed screen (/progress) now, not a bottom tab — reached from
+// Profile ("View progress") and Home's Study Planner/Performance rows —
+// so it uses ScreenHeader's back-button instead of the bare title a tab
+// screen doesn't need one for.
 export function ProgressScreen() {
   const theme = useTheme();
   const data = mockProgress;
@@ -26,12 +32,10 @@ export function ProgressScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <ThemedText style={styles.title}>Progress</ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Your study plan and performance, together.
-            </ThemedText>
-          </View>
+          <ScreenHeader title="Progress" />
+          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            Your study plan and performance, together.
+          </ThemedText>
 
           <StudyPlanCard
             daysToExam={data.daysToExam}
@@ -66,7 +70,7 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: BottomTabInset + Spacing.five,
+    paddingBottom: Spacing.six,
   },
   inner: {
     width: '100%',
@@ -74,16 +78,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.three,
     gap: 12,
-  },
-  header: {
-    gap: 2,
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 23,
-    fontWeight: '800',
-    lineHeight: 29,
-    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,

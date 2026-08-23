@@ -5,20 +5,22 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Not rendered on Home anymore — it now shows a single row inside
-// HomeListSection's grouped list. Kept here as the fuller destination a
-// recommended row's chevron should eventually route to, matching the
-// web dashboard's real "Recommended for Today" card
-// (app/dashboard/(main)/page.tsx).
+// Home's real "Recommended for Today" card — the same real recommended-
+// subject data the compact HomeListSection row used to summarize, now
+// promoted to its own full section per the desktop-aligned Home
+// hierarchy, matching the web dashboard's own "Recommended for Today"
+// card (app/dashboard/(main)/page.tsx).
 export function RecommendedTodayCard({
   subjectName,
   label,
+  insight,
   kp,
   minutes,
   onPress,
 }: {
   subjectName: string;
   label: string;
+  insight?: string;
   kp: number;
   minutes: number;
   onPress?: () => void;
@@ -29,10 +31,14 @@ export function RecommendedTodayCard({
       <ThemedText themeColor="primary" style={styles.eyebrow}>
         Recommended for Today
       </ThemedText>
-      <ThemedText style={styles.subject}>{subjectName}</ThemedText>
-      <ThemedText themeColor="textSecondary" style={styles.label}>
-        {label}
+      <ThemedText style={styles.subject}>
+        {subjectName} · {label}
       </ThemedText>
+      {insight && (
+        <ThemedText themeColor="textSecondary" style={styles.label}>
+          {insight}
+        </ThemedText>
+      )}
 
       <View style={styles.metaRow}>
         <View style={styles.metaItem}>

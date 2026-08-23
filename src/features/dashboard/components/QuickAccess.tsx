@@ -5,6 +5,12 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// Superseded: no longer rendered on Home (see DashboardScreen.tsx) — the
+// IA overhaul that added dedicated Learn/Review tabs made this row
+// redundant (Flashcards/Quizzes now live under Review, Library/Planner
+// under Learn). Left in place rather than deleted in case a future Home
+// redesign wants a shortcut row again.
+//
 // Matches the web mobile dashboard's Quick Access row: small tappable
 // shortcut tiles in a horizontal scroll, not full-width desktop-sized
 // buttons. Same five real destinations, same order.

@@ -4,13 +4,20 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
-// 5 tabs matching the web dashboard's real mobile bottom nav
-// (components/mobile-bottom-nav.tsx on studium-website): Home, Study,
-// Library, Progress, Profile. Only Home has real content built out so
-// far; the other four route to ComingSoonScreen placeholders
-// (src/app/study.tsx, library.tsx, progress.tsx, profile.tsx) so the nav
-// itself is fully wired now, and each tab's real screen can be swapped in
-// later without touching this file.
+// 5 tabs matching the desktop web app's own STUDY/REVIEW/TOOLS grouping,
+// translated into a mobile-appropriate hierarchy: Home ("what should I
+// study right now"), Learn (Learning Paths + Study Planner + Library —
+// "what am I learning"), Review (Flashcards + Quizzes + Terminology —
+// "what do I need to review"), Create ("what can I make/import"), Profile
+// ("how am I doing" — also where Progress and Passport now live).
+// Studium AI stays off this bar entirely, reached instead through the
+// floating "Ask AI" button on Home (see HomeFabs) so it's globally
+// reachable without spending a tab slot on it.
+//
+// Study Paths, Library, and Progress are no longer tabs — they moved to
+// plain pushed routes (/study-paths, /library, /progress, registered in
+// app/_layout.tsx) reached from inside Learn/Profile instead. Nothing
+// about those three screens changed; only how you get to them did.
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
@@ -30,32 +37,32 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="study">
-        <NativeTabs.Trigger.Label>Study Paths</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="learn">
+        <NativeTabs.Trigger.Label>Learn</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="map-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="map" />,
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="school-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="school" />,
           }}
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="library">
-        <NativeTabs.Trigger.Label>Library</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="review">
+        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="library-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="library" />,
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="repeat" />,
           }}
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="progress">
-        <NativeTabs.Trigger.Label>Progress</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="create">
+        <NativeTabs.Trigger.Label>Create</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={{
-            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="trending-up-outline" />,
-            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="trending-up" />,
+            default: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="add-circle-outline" />,
+            selected: <NativeTabs.Trigger.VectorIcon family={Ionicons} name="add-circle" />,
           }}
         />
       </NativeTabs.Trigger>

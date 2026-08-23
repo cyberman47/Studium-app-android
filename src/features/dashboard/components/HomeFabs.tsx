@@ -6,20 +6,22 @@ import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 // Two floating action buttons that sit above the tab bar on Home only:
-// a "+" on the left to add your own content (see ImportSheet), and an
-// "Ask AI" pill on the right into Studium AI (see features/aichat).
-// Positioned absolute over the ScrollView rather than inside it, so they
-// stay put while the page scrolls underneath them — the standard FAB
-// pattern.
-export function HomeFabs({ onPressImport, onPressAI }: { onPressImport: () => void; onPressAI: () => void }) {
+// a "+" on the left into the Create tab (a small quick-create shortcut,
+// per the desktop-aligned IA — Create itself is the dedicated screen;
+// this FAB used to open ImportSheet directly, a 2-option bottom sheet,
+// now superseded by Create's fuller 5-option screen), and an "Ask AI"
+// pill on the right into Studium AI (see features/aichat). Positioned
+// absolute over the ScrollView rather than inside it, so they stay put
+// while the page scrolls underneath them — the standard FAB pattern.
+export function HomeFabs({ onPressCreate, onPressAI }: { onPressCreate: () => void; onPressAI: () => void }) {
   const theme = useTheme();
   return (
     <View style={styles.row} pointerEvents="box-none">
       <View style={[styles.plusShadow, Shadow.raised]}>
         <Pressable
-          onPress={onPressImport}
+          onPress={onPressCreate}
           accessibilityRole="button"
-          accessibilityLabel="Add note or flashcard set"
+          accessibilityLabel="Create study material"
           style={({ pressed }) => [
             styles.plusButton,
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },

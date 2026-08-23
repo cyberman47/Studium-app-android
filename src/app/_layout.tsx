@@ -66,6 +66,9 @@ export default function RootLayout() {
         <Stack.Screen name="settings-reader" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-review" options={{ presentation: 'card' }} />
         <Stack.Screen name="leaderboard" options={{ presentation: 'card' }} />
+        <Stack.Screen name="study-paths" options={{ presentation: 'card' }} />
+        <Stack.Screen name="library" options={{ presentation: 'card' }} />
+        <Stack.Screen name="progress" options={{ presentation: 'card' }} />
         <Stack.Screen name="passport" options={{ presentation: 'card' }} />
         <Stack.Screen name="forum" options={{ presentation: 'card' }} />
         <Stack.Screen name="challenges" options={{ presentation: 'card' }} />
@@ -84,6 +87,7 @@ export default function RootLayout() {
         <Stack.Screen name="ai-settings" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-note" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
+        <Stack.Screen name="new-quiz" options={{ presentation: 'card' }} />
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
         <Stack.Screen name="signup" options={{ presentation: 'card' }} />
         <Stack.Screen name="auth" options={{ presentation: 'card' }} />
