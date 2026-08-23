@@ -9,8 +9,9 @@ SplashScreen.preventAutoHideAsync();
 // A root Stack wrapping the (tabs) group (the 5-tab NativeTabs bar) so
 // screens that live outside the bottom nav — Settings, Passport, Forum,
 // Challenges, Study Groups, Contribute, More and its own children
-// (Notifications, Invite, Help, About), all reached via router.push from
-// Profile — have somewhere to push onto. NativeTabs alone (the previous
+// (Notifications, Invite, Help, About), Studium AI chat, and the
+// note/flashcard creation + My Content screens reached from Home's "+" —
+// have somewhere to push onto. NativeTabs alone (the previous
 // setup here) has no concept of a screen outside its own declared
 // triggers, so router.push('/settings') silently went nowhere before
 // this existed. Every pushed screen hides the native header and renders
@@ -36,6 +37,10 @@ export default function RootLayout() {
         <Stack.Screen name="invite" options={{ presentation: 'card' }} />
         <Stack.Screen name="help" options={{ presentation: 'card' }} />
         <Stack.Screen name="about" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ai-chat" options={{ presentation: 'card' }} />
+        <Stack.Screen name="new-note" options={{ presentation: 'card' }} />
+        <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
+        <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
       </Stack>
     </ThemeProvider>
   );

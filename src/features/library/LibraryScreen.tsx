@@ -8,6 +8,8 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import { useMyContent } from '@/features/mycontent/store';
+
 import { LibraryCategoryGrid } from './components/LibraryCategoryGrid';
 import { mockLibrary } from './data';
 
@@ -26,10 +28,17 @@ export function LibraryScreen() {
   const theme = useTheme();
   const router = useRouter();
   const data = mockLibrary;
+  const { notes, flashcardSets } = useMyContent();
 
   function openItem(id: string) {
     router.push(`/libraryitem/${id}`);
   }
+
+  const myContentCount = notes.length + flashcardSets.length;
+  const myContentSubtitle =
+    myContentCount === 0
+      ? 'Tap + on Home to add your first note'
+      : `${notes.length} note${notes.length === 1 ? '' : 's'} · ${flashcardSets.length} set${flashcardSets.length === 1 ? '' : 's'}`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -52,6 +61,14 @@ export function LibraryScreen() {
               MORE FROM YOUR WORKSPACE
             </ThemedText>
             <GroupedList>
+              <ListRow
+                icon="add-circle-outline"
+                iconColor={theme.primary}
+                iconBackground={theme.primaryMuted}
+                title="My Content"
+                subtitle={myContentSubtitle}
+                onPress={() => router.push('/my-content')}
+              />
               <ListRow
                 icon="albums-outline"
                 iconColor={theme.primary}

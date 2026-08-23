@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,7 +10,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { ContinueCard } from './components/ContinueCard';
 import { DailyCaseCard } from './components/DailyCaseCard';
 import { GreetingHeader } from './components/GreetingHeader';
+import { HomeFabs } from './components/HomeFabs';
 import { HomeListSection } from './components/HomeListSection';
+import { ImportSheet } from './components/ImportSheet';
 import { QuickAccess } from './components/QuickAccess';
 import { StatsRow } from './components/StatsRow';
 import { mockDashboard } from './data';
@@ -27,6 +30,7 @@ export function DashboardScreen() {
   const router = useRouter();
   const data = mockDashboard;
   const goToProgress = () => router.push('/progress');
+  const [importSheetVisible, setImportSheetVisible] = useState(false);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -70,6 +74,21 @@ export function DashboardScreen() {
           <QuickAccess />
         </View>
       </ScrollView>
+
+      <HomeFabs onPressImport={() => setImportSheetVisible(true)} onPressAI={() => router.push('/ai-chat')} />
+
+      <ImportSheet
+        visible={importSheetVisible}
+        onClose={() => setImportSheetVisible(false)}
+        onSelectNote={() => {
+          setImportSheetVisible(false);
+          router.push('/new-note');
+        }}
+        onSelectFlashcards={() => {
+          setImportSheetVisible(false);
+          router.push('/new-flashcards');
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -83,7 +102,9 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    paddingBottom: BottomTabInset + Spacing.five,
+    // Extra clearance so QuickAccess (the last section) doesn't sit under
+    // the floating + / Ask AI buttons — see HomeFabs.
+    paddingBottom: BottomTabInset + Spacing.six,
   },
   inner: {
     width: '100%',
