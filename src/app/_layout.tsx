@@ -38,6 +38,9 @@ export default function RootLayout() {
         <Stack.Screen name="help" options={{ presentation: 'card' }} />
         <Stack.Screen name="about" options={{ presentation: 'card' }} />
         <Stack.Screen name="ai-chat" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ai-chat-history" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ai-chat-settings" options={{ presentation: 'card' }} />
+        <Stack.Screen name="ai-settings" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-note" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />
