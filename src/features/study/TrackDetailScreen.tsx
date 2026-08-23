@@ -1,11 +1,10 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { GroupedList } from '@/components/grouped-list';
-import { ListRow } from '@/components/list-row';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
+import { LessonGrid } from '@/features/study/components/LessonGrid';
 import { useTheme } from '@/hooks/use-theme';
 
 import { findTrack } from './tracks';
@@ -15,6 +14,13 @@ import { trackDetails } from './trackDetails';
 // lesson list for that track, mirrored from the web app's own lib/
 // *Path.ts files (see trackDetails.ts). The mobile equivalent of
 // drilling into one of the web's Learning Paths "Browse Paths" cards.
+//
+// The lesson list renders as a 2-column card grid (LessonGrid) rather
+// than a vertical GroupedList — per feedback that the list layout felt
+// too plain. To revert, swap the <LessonGrid ... /> below back for a
+// <GroupedList>{detail.rows.map((row) => <ListRow .../>)}</GroupedList>
+// (see git history for the exact previous markup) — nothing else in the
+// app depends on this screen's layout choice.
 export function TrackDetailScreen({ id }: { id: string }) {
   const theme = useTheme();
   const track = findTrack(id);
@@ -52,18 +58,7 @@ export function TrackDetailScreen({ id }: { id: string }) {
             {detail.description}
           </ThemedText>
 
-          <GroupedList>
-            {detail.rows.map((row) => (
-              <ListRow
-                key={row.title}
-                icon={track.icon}
-                iconColor={track.fg}
-                iconBackground={track.bg}
-                title={row.title}
-                subtitle={row.subtitle}
-              />
-            ))}
-          </GroupedList>
+          <LessonGrid items={detail.rows} icon={track.icon} iconColor={track.fg} iconBackground={track.bg} />
         </View>
       </ScrollView>
     </SafeAreaView>
