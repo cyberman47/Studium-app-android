@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
+import { ExpandableField } from '@/features/settings/components/ExpandableField';
 import { PillGroup } from '@/features/settings/components/PillGroup';
 import { SavedIndicator, useSavedFeedback } from '@/features/settings/components/SavedIndicator';
 import { SelectableRow } from '@/features/settings/components/SelectableRow';
@@ -20,11 +21,26 @@ import {
 } from '@/features/settings/reviewStore';
 import { useTheme } from '@/hooks/use-theme';
 
+// Short summary for a multi-select field's collapsed row — "None
+// selected" / a couple of names spelled out / a plain count once there
+// are too many to fit on one line.
+function summarizeMulti(selected: string[], total: number) {
+  if (selected.length === 0) return 'None selected';
+  if (selected.length === total) return 'All selected';
+  if (selected.length <= 2) return selected.join(', ');
+  return `${selected.length} selected`;
+}
+
 // Settings > Review. Every control here is genuinely persisted (see
 // reviewStore.ts) but there's no real flashcard review session engine in
 // this app yet to configure — Library's "My Decks" is still mock content.
 // Built complete and interactive now so whoever wires the real session
 // runner has a real settings shape to read from immediately.
+//
+// Every field with 3+ options collapses behind ExpandableField (shows
+// the current selection, expands in place on tap) instead of leaving
+// every option permanently visible — this is what used to make Question
+// Types etc. take up the whole screen at once.
 export function ReviewScreen() {
   const theme = useTheme();
   const settings = useReviewSettings();
@@ -56,6 +72,8 @@ export function ReviewScreen() {
     set('cardsPerSession', parsed);
   }
 
+  const cardsSummary = settings.cardsPerSessionCustom ? `Custom · ${settings.cardsPerSession} cards` : `${settings.cardsPerSession} cards`;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -71,13 +89,7 @@ export function ReviewScreen() {
               SESSION SETTINGS
             </ThemedText>
 
-            <View style={styles.field}>
-              <View style={styles.fieldHeaderRow}>
-                <ThemedText style={styles.fieldTitle}>Flashcards per session</ThemedText>
-                <ThemedText themeColor="primary" style={styles.fieldValue}>
-                  {settings.cardsPerSession}
-                </ThemedText>
-              </View>
+            <ExpandableField title="Flashcards per session" summary={cardsSummary}>
               <PillGroup
                 options={[...cardsPerSessionPresets.map(String), 'Custom']}
                 selected={settings.cardsPerSessionCustom ? 'Custom' : String(settings.cardsPerSession)}
@@ -92,19 +104,18 @@ export function ReviewScreen() {
                   keyboardType="number-pad"
                   placeholder="Enter a number"
                   placeholderTextColor={theme.textSecondary}
-                  style={[styles.customInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.backgroundElement }]}
+                  style={[styles.customInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
                 />
               )}
-            </View>
+            </ExpandableField>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Review Mode</ThemedText>
+            <ExpandableField title="Review Mode" summary={settings.reviewMode}>
               <View style={styles.selectableList}>
                 {reviewModeOptions.map((opt) => (
                   <SelectableRow key={opt} label={opt} selected={settings.reviewMode === opt} onPress={() => set('reviewMode', opt)} />
                 ))}
               </View>
-            </View>
+            </ExpandableField>
           </View>
 
           {/* What should be included */}
@@ -112,17 +123,19 @@ export function ReviewScreen() {
             <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
               WHAT SHOULD BE INCLUDED?
             </ThemedText>
-            <View style={styles.selectableList}>
-              {includedOptions.map((opt) => (
-                <SelectableRow
-                  key={opt}
-                  label={opt}
-                  multiple
-                  selected={settings.included.includes(opt)}
-                  onPress={() => toggleInList(settings.included, 'included', opt)}
-                />
-              ))}
-            </View>
+            <ExpandableField title="Included" summary={summarizeMulti(settings.included, includedOptions.length)}>
+              <View style={styles.selectableList}>
+                {includedOptions.map((opt) => (
+                  <SelectableRow
+                    key={opt}
+                    label={opt}
+                    multiple
+                    selected={settings.included.includes(opt)}
+                    onPress={() => toggleInList(settings.included, 'included', opt)}
+                  />
+                ))}
+              </View>
+            </ExpandableField>
           </View>
 
           {/* Question Types */}
@@ -130,17 +143,19 @@ export function ReviewScreen() {
             <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
               QUESTION TYPES
             </ThemedText>
-            <View style={styles.selectableList}>
-              {questionTypeOptions.map((opt) => (
-                <SelectableRow
-                  key={opt}
-                  label={opt}
-                  multiple
-                  selected={settings.questionTypes.includes(opt)}
-                  onPress={() => toggleInList(settings.questionTypes, 'questionTypes', opt)}
-                />
-              ))}
-            </View>
+            <ExpandableField title="Question Types" summary={summarizeMulti(settings.questionTypes, questionTypeOptions.length)}>
+              <View style={styles.selectableList}>
+                {questionTypeOptions.map((opt) => (
+                  <SelectableRow
+                    key={opt}
+                    label={opt}
+                    multiple
+                    selected={settings.questionTypes.includes(opt)}
+                    onPress={() => toggleInList(settings.questionTypes, 'questionTypes', opt)}
+                  />
+                ))}
+              </View>
+            </ExpandableField>
           </View>
 
           {/* Review Order */}
@@ -148,11 +163,13 @@ export function ReviewScreen() {
             <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
               REVIEW ORDER
             </ThemedText>
-            <View style={styles.selectableList}>
-              {reviewOrderOptions.map((opt) => (
-                <SelectableRow key={opt} label={opt} selected={settings.reviewOrder === opt} onPress={() => set('reviewOrder', opt)} />
-              ))}
-            </View>
+            <ExpandableField title="Review Order" summary={settings.reviewOrder}>
+              <View style={styles.selectableList}>
+                {reviewOrderOptions.map((opt) => (
+                  <SelectableRow key={opt} label={opt} selected={settings.reviewOrder === opt} onPress={() => set('reviewOrder', opt)} />
+                ))}
+              </View>
+            </ExpandableField>
           </View>
 
           {/* Session Behavior */}
@@ -186,11 +203,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   section: { gap: 14 },
   sectionLabel: { fontSize: 11, fontWeight: '500', letterSpacing: 0.4 },
-  field: { gap: 8 },
-  fieldHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fieldTitle: { fontSize: 13, fontWeight: '700' },
-  fieldValue: { fontSize: 13, fontWeight: '800' },
-  customInput: { marginTop: 4, borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, maxWidth: 140 },
+  customInput: { marginTop: 8, borderRadius: Radius.md, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, maxWidth: 140 },
   selectableList: { gap: 8 },
   rowShadow: { borderRadius: Radius.lg },
   rowCard: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three },

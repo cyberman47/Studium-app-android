@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
-import { OptionSheet } from '@/features/settings/components/OptionSheet';
+import { ExpandableField } from '@/features/settings/components/ExpandableField';
 import { PillGroup } from '@/features/settings/components/PillGroup';
 import { SavedIndicator, useSavedFeedback } from '@/features/settings/components/SavedIndicator';
+import { SelectableRow } from '@/features/settings/components/SelectableRow';
 import { ToggleRow } from '@/features/settings/components/ToggleRow';
 import {
   lineSpacingOptions,
@@ -34,11 +35,16 @@ const readingWidthMap: Record<string, number> = { Narrow: 260, Comfortable: 340,
 // card below Text Size/Style/Spacing is the one place these settings
 // visibly do something today, which is exactly why it's here — it proves
 // the values are real without needing the reader itself to exist yet.
+//
+// Every field with 3+ options is collapsed behind ExpandableField (shows
+// the current value, expands in place on tap) rather than leaving every
+// option list permanently on screen — the toggle-only rows (Auto Play,
+// Highlight, and the General section) stay as-is since a single on/off
+// switch isn't a multi-option list.
 export function ReaderScreen() {
   const theme = useTheme();
   const settings = useReaderSettings();
   const { visible: saved, trigger } = useSavedFeedback();
-  const [voiceSheetOpen, setVoiceSheetOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -68,10 +74,9 @@ export function ReaderScreen() {
               TEXT APPEARANCE
             </ThemedText>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Text Size</ThemedText>
+            <ExpandableField title="Text Size" summary={settings.textSize}>
               <PillGroup options={textSizeOptions} selected={settings.textSize} onSelect={(v) => set('textSize', v as typeof settings.textSize)} />
-            </View>
+            </ExpandableField>
 
             <View style={[styles.previewShadow, Shadow.card]}>
               <View style={[styles.previewCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border, maxWidth: readingWidthMap[settings.readingWidth] }]}>
@@ -103,29 +108,25 @@ export function ReaderScreen() {
               </View>
             </View>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Text Style</ThemedText>
+            <ExpandableField title="Text Style" summary={settings.textStyle}>
               <PillGroup options={textStyleOptions} selected={settings.textStyle} onSelect={(v) => set('textStyle', v as typeof settings.textStyle)} />
-            </View>
+            </ExpandableField>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Line Spacing</ThemedText>
+            <ExpandableField title="Line Spacing" summary={settings.lineSpacing}>
               <PillGroup options={lineSpacingOptions} selected={settings.lineSpacing} onSelect={(v) => set('lineSpacing', v as typeof settings.lineSpacing)} />
-            </View>
+            </ExpandableField>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Paragraph Spacing</ThemedText>
+            <ExpandableField title="Paragraph Spacing" summary={settings.paragraphSpacing}>
               <PillGroup
                 options={paragraphSpacingOptions}
                 selected={settings.paragraphSpacing}
                 onSelect={(v) => set('paragraphSpacing', v as typeof settings.paragraphSpacing)}
               />
-            </View>
+            </ExpandableField>
 
-            <View style={styles.field}>
-              <ThemedText style={styles.fieldTitle}>Reading Width</ThemedText>
+            <ExpandableField title="Reading Width" summary={settings.readingWidth}>
               <PillGroup options={readingWidthOptions} selected={settings.readingWidth} onSelect={(v) => set('readingWidth', v as typeof settings.readingWidth)} />
-            </View>
+            </ExpandableField>
           </View>
 
           {/* Text-to-Speech */}
@@ -140,39 +141,30 @@ export function ReaderScreen() {
               </View>
             </View>
 
-            <Pressable
-              onPress={() => setVoiceSheetOpen(true)}
-              disabled={!settings.ttsEnabled}
-              accessibilityRole="button"
-              accessibilityLabel="Voice"
-              style={[styles.selectRow, { borderColor: theme.border, backgroundColor: theme.backgroundElement }, !settings.ttsEnabled && styles.disabled]}>
-              <View style={styles.textCol}>
-                <ThemedText style={styles.fieldTitle}>Voice</ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.fieldHint}>
-                  {settings.ttsVoice}
-                </ThemedText>
+            <ExpandableField title="Voice" summary={settings.ttsVoice} disabled={!settings.ttsEnabled}>
+              <View style={styles.selectableList}>
+                {ttsVoiceOptions.map((opt) => (
+                  <SelectableRow key={opt} label={opt} selected={settings.ttsVoice === opt} onPress={() => set('ttsVoice', opt)} />
+                ))}
               </View>
-              <Ionicons name="chevron-down" size={16} color={theme.textSecondary} />
-            </Pressable>
+            </ExpandableField>
 
-            <View style={[styles.field, !settings.ttsEnabled && styles.disabled]}>
-              <ThemedText style={styles.fieldTitle}>Language</ThemedText>
+            <ExpandableField title="Language" summary={settings.ttsLanguage} disabled={!settings.ttsEnabled}>
               <PillGroup
                 options={ttsLanguageOptions}
                 selected={settings.ttsLanguage}
-                onSelect={(v) => settings.ttsEnabled && set('ttsLanguage', v as typeof settings.ttsLanguage)}
+                onSelect={(v) => set('ttsLanguage', v as typeof settings.ttsLanguage)}
               />
-            </View>
+            </ExpandableField>
 
-            <View style={[styles.field, !settings.ttsEnabled && styles.disabled]}>
-              <ThemedText style={styles.fieldTitle}>Speech Speed</ThemedText>
+            <ExpandableField title="Speech Speed" summary={`${settings.ttsSpeed}×`} disabled={!settings.ttsEnabled}>
               <PillGroup
                 options={speechSpeedOptions}
                 selected={settings.ttsSpeed}
                 getLabel={(v) => `${v}×`}
-                onSelect={(v) => settings.ttsEnabled && set('ttsSpeed', Number(v))}
+                onSelect={(v) => set('ttsSpeed', Number(v))}
               />
-            </View>
+            </ExpandableField>
 
             <View style={[styles.rowShadow, Shadow.card, !settings.ttsEnabled && styles.disabled]}>
               <View style={[styles.rowCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -229,15 +221,6 @@ export function ReaderScreen() {
           </View>
         </View>
       </ScrollView>
-
-      <OptionSheet
-        visible={voiceSheetOpen}
-        title="Voice"
-        options={ttsVoiceOptions}
-        selected={settings.ttsVoice}
-        onSelect={(v) => set('ttsVoice', v)}
-        onClose={() => setVoiceSheetOpen(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -250,17 +233,13 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   section: { gap: 14 },
   sectionLabel: { fontSize: 11, fontWeight: '500', letterSpacing: 0.4 },
-  field: { gap: 8 },
-  fieldTitle: { fontSize: 13, fontWeight: '700' },
-  fieldHint: { fontSize: 11, marginTop: 1 },
   previewShadow: { borderRadius: Radius.lg, alignSelf: 'center' },
   previewCard: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.four, width: '100%' },
   previewText: {},
   rowShadow: { borderRadius: Radius.lg },
   rowCard: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three },
   divider: { height: StyleSheet.hairlineWidth },
-  selectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, paddingVertical: 12 },
-  textCol: { flex: 1, minWidth: 0 },
+  selectableList: { gap: 8 },
   previewButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: Radius.pill, borderWidth: 1.5, paddingVertical: 13 },
   previewButtonText: { fontSize: 13, fontWeight: '700' },
   disabled: { opacity: 0.45 },

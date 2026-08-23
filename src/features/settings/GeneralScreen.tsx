@@ -8,6 +8,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { AppearanceMode, setAppearanceMode, useAppearanceMode } from '@/features/settings/appearanceStore';
+import { ExpandableField } from '@/features/settings/components/ExpandableField';
 import { PillGroup } from '@/features/settings/components/PillGroup';
 import { SavedIndicator, useSavedFeedback } from '@/features/settings/components/SavedIndicator';
 import { languageOptions, setLanguage, useLanguage } from '@/features/settings/generalStore';
@@ -44,14 +45,16 @@ export function GeneralScreen() {
               </ThemedText>
               <SavedIndicator visible={visible} />
             </View>
-            <PillGroup
-              options={languageOptions}
-              selected={language}
-              onSelect={(value) => {
-                setLanguage(value);
-                trigger();
-              }}
-            />
+            <ExpandableField title="Language" summary={language}>
+              <PillGroup
+                options={languageOptions}
+                selected={language}
+                onSelect={(value) => {
+                  setLanguage(value);
+                  trigger();
+                }}
+              />
+            </ExpandableField>
           </View>
 
           <View style={styles.section}>
@@ -60,15 +63,17 @@ export function GeneralScreen() {
                 APPEARANCE
               </ThemedText>
             </View>
-            <PillGroup
-              options={appearanceOptions}
-              selected={appearance}
-              getLabel={(v) => appearanceLabels[v as AppearanceMode]}
-              onSelect={(value) => {
-                setAppearanceMode(value as AppearanceMode);
-                trigger();
-              }}
-            />
+            <ExpandableField title="Appearance" summary={appearanceLabels[appearance]}>
+              <PillGroup
+                options={appearanceOptions}
+                selected={appearance}
+                getLabel={(v) => appearanceLabels[v as AppearanceMode]}
+                onSelect={(value) => {
+                  setAppearanceMode(value as AppearanceMode);
+                  trigger();
+                }}
+              />
+            </ExpandableField>
           </View>
 
           <View style={styles.section}>
