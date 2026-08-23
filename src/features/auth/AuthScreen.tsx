@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { logIn } from './store';
+import { signIn, signUp } from './store';
 
 type Mode = 'signup' | 'login';
 
@@ -18,11 +18,11 @@ type Mode = 'signup' | 'login';
 // screen, this one keeps its back button, since you genuinely can return to
 // the welcome screen from here. One screen, two modes toggled by the link
 // at the bottom rather than two separate routes, since they share every
-// field and only differ in heading/CTA copy. There's no real backend
-// behind this yet (see features/auth/store.ts): submitting either form
-// just flips the local signed-in flag and returns to Home, honestly no
-// different from every other mock-data screen in this app, not pretending
-// to create or check a real account.
+// field and only differ in heading/CTA copy. Real Supabase auth (features/
+// auth/store.ts) — the same project studium-website uses — so an account
+// created here is a genuine account there too. On success the app-launch
+// gate's own listener would eventually pick up the new session, but
+// navigating to Home explicitly keeps this button's response immediate.
 export function AuthScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -33,11 +33,19 @@ export function AuthScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // True once Supabase has actually sent a confirmation email and is
+  // waiting on a click before issuing a session — real project setting
+  // (this Supabase project requires email confirmation by default), not a
+  // fabricated step. Mirrors the web app's own signup flow
+  // (app/signup/page.tsx's awaitingConfirmation) since it's the same
+  // project and the same setting.
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const isSignup = mode === 'signup';
 
-  function submit() {
-    if (!email.trim() || !password) {
+  async function submit() {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setError('Email and password are required.');
       return;
     }
@@ -47,13 +55,42 @@ export function AuthScreen() {
     }
     setError('');
     setSubmitting(true);
-    // No real backend to await yet — a brief delay so the button's loading
-    // state reads as genuine rather than instant/fake.
-    setTimeout(() => {
-      setSubmitting(false);
-      logIn();
+    try {
+      if (isSignup) {
+        const { awaitingConfirmation: needsConfirmation } = await signUp(trimmedEmail, password);
+        if (needsConfirmation) {
+          setAwaitingConfirmation(true);
+          return;
+        }
+      } else {
+        await signIn(trimmedEmail, password);
+      }
       router.replace('/');
-    }, 500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={styles.inner}>
+          <ScreenHeader title="Sign Up" />
+          <View style={styles.header}>
+            <View style={[styles.iconCircle, { backgroundColor: theme.primaryMuted }]}>
+              <Ionicons name="mail-outline" size={26} color={theme.primary} />
+            </View>
+            <ThemedText style={styles.title}>Check your inbox</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              We sent a confirmation link to {email.trim()}. Tap it to finish creating your account, then come back
+              and log in.
+            </ThemedText>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (

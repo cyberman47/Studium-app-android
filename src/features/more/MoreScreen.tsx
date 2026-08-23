@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -20,11 +21,18 @@ import { logOut } from '@/features/auth/store';
 export function MoreScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  function handleLogOut() {
-    logOut();
+  async function handleLogOut() {
+    setLoggingOut(true);
+    // Real Supabase sign-out (features/auth/store.ts) — the app-launch
+    // gate would eventually bounce us here reactively anyway once the
+    // session clears, but navigating explicitly keeps this button's own
+    // response immediate rather than waiting on that listener round trip.
     // replace, not push — the point of logging out is that going back
     // shouldn't drop you right back into the app you just left.
+    await logOut();
+    setLoggingOut(false);
     router.replace('/signup');
   }
 
@@ -119,16 +127,18 @@ export function MoreScreen() {
 
           <Pressable
             onPress={handleLogOut}
+            disabled={loggingOut}
             accessibilityRole="button"
             accessibilityLabel="Log out"
             style={({ pressed }) => [
               styles.logOutButton,
               { borderColor: theme.roseMuted },
-              pressed && { backgroundColor: theme.roseMuted },
+              pressed && !loggingOut && { backgroundColor: theme.roseMuted },
+              loggingOut && styles.logOutButtonDisabled,
             ]}>
             <Ionicons name="log-out-outline" size={16} color={theme.rose} />
             <ThemedText themeColor="rose" style={styles.logOutText}>
-              Log Out
+              {loggingOut ? 'Logging out…' : 'Log Out'}
             </ThemedText>
           </Pressable>
         </View>
@@ -176,5 +186,8 @@ const styles = StyleSheet.create({
   logOutText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  logOutButtonDisabled: {
+    opacity: 0.6,
   },
 });

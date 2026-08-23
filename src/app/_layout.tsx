@@ -4,26 +4,29 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { useIsLoggedIn } from '@/features/auth/store';
+import { useAuthState } from '@/features/auth/store';
 
 SplashScreen.preventAutoHideAsync();
 
 // Launch-time auth gate: an unauthenticated session gets bounced to the
 // Welcome screen (features/auth/WelcomeScreen.tsx, at /signup) instead of
-// landing on Home — checked once, on mount, not reactively, since this is
-// a one-time "where does the app open to" decision, not full per-screen
-// route protection. The redirect fires within milliseconds of mount, well
-// inside AnimatedSplashOverlay's ~600ms+ cover window above it, so there's
-// no visible flash of Home before the swap.
+// landing on Home. Reacts to real Supabase auth state (features/auth/
+// store.ts) rather than checking once — status starts 'loading' while a
+// persisted session restores from AsyncStorage (async, so it can't be
+// known synchronously at mount), and only resolves to 'authenticated' or
+// 'unauthenticated' once that finishes; this effect only acts on the
+// resolved 'unauthenticated' case; being reactive (not a one-shot check)
+// also means it correctly bounces the student out if a session ever gets
+// invalidated later during the app's lifetime, not just at launch.
+// AnimatedSplashOverlay's ~600ms+ cover window above this gives that
+// restore comfortably enough time to resolve before anything's visible.
 function AuthGate() {
   const router = useRouter();
-  const isLoggedIn = useIsLoggedIn();
+  const { status } = useAuthState();
 
   useEffect(() => {
-    if (!isLoggedIn) router.replace('/signup');
-    // Only ever check the state as it was at launch — see note above.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (status === 'unauthenticated') router.replace('/signup');
+  }, [status, router]);
 
   return null;
 }
