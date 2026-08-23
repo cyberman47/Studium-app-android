@@ -90,10 +90,10 @@ export function ProfileScreen() {
               </ThemedText>
             </View>
             <Pressable
-              onPress={() => router.push('/settings')}
+              onPress={() => router.push('/more')}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Settings"
+              accessibilityLabel="More"
               style={({ pressed }) => [
                 styles.settingsButton,
                 { backgroundColor: theme.backgroundElement, borderColor: theme.border },
