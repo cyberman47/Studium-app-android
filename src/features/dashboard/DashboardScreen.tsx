@@ -15,7 +15,8 @@ import { HomeListSection } from './components/HomeListSection';
 import { ImportSheet } from './components/ImportSheet';
 import { QuickAccess } from './components/QuickAccess';
 import { StatsRow } from './components/StatsRow';
-import { mockDashboard } from './data';
+import { DashboardData, mockDashboard } from './data';
+import { useRealDashboardStats } from './remote';
 
 // Composition, top to bottom, deliberately alternates visual weight so no
 // two sections in a row read the same: a bold gradient hero (Continue
@@ -28,7 +29,35 @@ import { mockDashboard } from './data';
 export function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const data = mockDashboard;
+  // Identity/progress fields (name, avatar, streak, KP, level, path,
+  // leaderboard's top row) are real once this resolves — see remote.ts for
+  // exactly which fields and why. Everything else on this screen (Continue
+  // Studying, Daily Case, Recommended, exam readiness/mastery %, days to
+  // exam) has no real per-user backend yet, so it stays mock regardless.
+  // Falls back to the mock identity fields while the fetch is in flight
+  // right after login, rather than a blank/zeroed header.
+  const { stats } = useRealDashboardStats();
+  const data: DashboardData = stats
+    ? {
+        ...mockDashboard,
+        name: stats.name,
+        avatarInitial: stats.avatarInitial,
+        pathLabel: stats.pathLabel,
+        pathEmoji: stats.pathEmoji,
+        streakDays: stats.streakDays,
+        totalKP: stats.totalKP,
+        todayKP: stats.todayKP,
+        level: stats.level,
+        levelName: stats.levelName,
+        weeklyKP: { earned: stats.weeklyKPEarned, target: mockDashboard.weeklyKP.target },
+        leaderboard: stats.topLeaderboardRow
+          ? [
+              { id: stats.topLeaderboardRow.id, name: stats.topLeaderboardRow.name, totalKP: stats.topLeaderboardRow.totalKP, streak: stats.topLeaderboardRow.streak },
+              ...mockDashboard.leaderboard.slice(1),
+            ]
+          : mockDashboard.leaderboard,
+      }
+    : mockDashboard;
   const goToProgress = () => router.push('/progress');
   const [importSheetVisible, setImportSheetVisible] = useState(false);
 
