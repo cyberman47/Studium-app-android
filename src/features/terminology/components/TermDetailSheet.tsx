@@ -19,6 +19,11 @@ import { recordTermPressed, setTermConfidence, type TermConfidence, useTermProgr
 // then three "Understanding" buttons (1 / 2 / checkmark) record how well you
 // actually know it. Rating is optional and re-settable; it never removes the
 // term from the library or hides the button again.
+//
+// Renders as a centered card, not a bottom sheet — per feedback, a
+// definition popping up from the bottom read as an odd place to look for
+// it. A dedicated "×" close button replaces the old drag-down grabber
+// since there's no longer a bottom edge to swipe.
 const LEVELS: { level: TermConfidence; label: string; symbol: string | null; icon?: 'checkmark' }[] = [
   { level: 'dont-know', label: "Don't know", symbol: '1' },
   { level: 'somewhat', label: 'Somewhat', symbol: '2' },
@@ -55,7 +60,14 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
         <Pressable onPress={(e) => e.stopPropagation()} style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
           {term && (
             <>
-              <View style={styles.grabber} />
+              <Pressable
+                onPress={onClose}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                hitSlop={8}
+                style={({ pressed }) => [styles.closeButton, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+                <Ionicons name="close" size={16} color={theme.textSecondary} />
+              </Pressable>
               <View style={[styles.tag, { backgroundColor: theme.primaryMuted }]}>
                 <ThemedText themeColor="primary" style={styles.tagText}>
                   {term.category}
@@ -109,30 +121,39 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
     backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: Radius.xl,
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.five,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.four,
     gap: 4,
   },
-  grabber: {
-    width: 36,
-    height: 4,
+  closeButton: {
+    position: 'absolute',
+    top: Spacing.three,
+    right: Spacing.three,
+    width: 28,
+    height: 28,
     borderRadius: Radius.pill,
-    backgroundColor: 'rgba(15, 23, 42, 0.15)',
-    alignSelf: 'center',
-    marginBottom: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   tag: {
     alignSelf: 'flex-start',
     borderRadius: Radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    // Leaves room so a long category name never runs under the close
+    // button sitting absolutely-positioned in the top-right corner.
+    maxWidth: '80%',
   },
   tagText: {
     fontSize: 11,
