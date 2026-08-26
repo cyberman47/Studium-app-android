@@ -50,7 +50,7 @@ const familiarityLevels: { level: TermConfidence; label: string; dotColor: 'rose
   { level: 'know-well', label: 'Know', dotColor: 'primary' },
 ];
 
-const COMPACT_HEIGHT = 480;
+const COMPACT_HEIGHT = 360;
 const DRAG_DISTANCE = 220;
 const RELEASE_DISTANCE_THRESHOLD = 70;
 const RELEASE_VELOCITY_THRESHOLD = 0.6;
