@@ -26,7 +26,15 @@ const TIER_META: Record<MasteryTier, { icon: keyof typeof Ionicons.glyphMap; lab
   mastered: { icon: 'checkmark', label: ', learned' },
 };
 
-function TermRow({ term, tier, onPress }: { term: TermEntry; tier: MasteryTier; onPress: () => void }) {
+function TermRow({
+  term,
+  tier,
+  onPress,
+}: {
+  term: TermEntry;
+  tier: MasteryTier;
+  onPress: (anchor: { x: number; y: number }) => void;
+}) {
   const theme = useTheme();
   const meta = TIER_META[tier];
   const iconBg = tier === 'mastered' ? theme.primaryMuted : tier === 'learning' ? theme.roseMuted : theme.backgroundSelected;
@@ -34,7 +42,7 @@ function TermRow({ term, tier, onPress }: { term: TermEntry; tier: MasteryTier; 
   return (
     <View style={[styles.rowShadow, Shadow.card]}>
       <Pressable
-        onPress={onPress}
+        onPress={(e) => onPress({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY })}
         accessibilityRole="button"
         accessibilityLabel={`${term.term}, ${term.category}${meta.label}`}
         style={({ pressed }) => [
@@ -65,6 +73,12 @@ export function TerminologyPanel() {
   const progressMap = useTermProgressMap();
   const [query, setQuery] = useState('');
   const [openTerm, setOpenTerm] = useState<TermEntry | null>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  function openTermAt(term: TermEntry, at: { x: number; y: number }) {
+    setAnchor(at);
+    setOpenTerm(term);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,7 +136,7 @@ export function TerminologyPanel() {
           </ThemedText>
           <View style={styles.list}>
             {recentlySaved.map((t) => (
-              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={() => setOpenTerm(t)} />
+              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={(at) => openTermAt(t, at)} />
             ))}
           </View>
         </View>
@@ -139,13 +153,13 @@ export function TerminologyPanel() {
         ) : (
           <View style={styles.list}>
             {filtered.map((t) => (
-              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={() => setOpenTerm(t)} />
+              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={(at) => openTermAt(t, at)} />
             ))}
           </View>
         )}
       </View>
 
-      <TermDetailSheet term={openTerm} visible={openTerm !== null} onClose={() => setOpenTerm(null)} />
+      <TermDetailSheet term={openTerm} visible={openTerm !== null} anchor={anchor} onClose={() => setOpenTerm(null)} />
     </View>
   );
 }

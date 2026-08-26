@@ -35,6 +35,7 @@ export function InteractiveText({
   const theme = useTheme();
   const progressMap = useTermProgressMap();
   const [openTerm, setOpenTerm] = useState<TermEntry | null>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
   const segments = useMemo(() => detectTerms(text), [text]);
 
   return (
@@ -62,13 +63,20 @@ export function InteractiveText({
             };
           }
           return (
-            <Text key={i} onPress={() => setOpenTerm(seg.term)} suppressHighlighting style={termStyle}>
+            <Text
+              key={i}
+              onPress={(e) => {
+                setAnchor({ x: e.nativeEvent.pageX, y: e.nativeEvent.pageY });
+                setOpenTerm(seg.term);
+              }}
+              suppressHighlighting
+              style={termStyle}>
               {seg.value}
             </Text>
           );
         })}
       </Text>
-      <TermDetailSheet term={openTerm} visible={openTerm !== null} onClose={() => setOpenTerm(null)} />
+      <TermDetailSheet term={openTerm} visible={openTerm !== null} anchor={anchor} onClose={() => setOpenTerm(null)} />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, LayoutChangeEvent, Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,21 +27,20 @@ import {
 // Terminology browse list are the exact same progress state, not two
 // parallel systems.
 //
-// Same continuous-transform architecture as the "New Word" vocabulary card
-// (features/vocabulary/components/VocabularyWordCard.tsx) rather than the
-// two-modal (quick popup + separate "Expand" modal) design this replaces:
-// one Animated.View, driven by a single `progress` value (0 = compact,
-// 1 = fully expanded), grows in place — right where the word was tapped,
-// inside the lesson or Daily Case text — instead of navigating away.
-// Swipe up (a real PanResponder drag, live-following the finger) or a tap
-// on the "Swipe up for more" hint both expand it; the pinned header (term
-// name, speaker icon, definition) never remounts between states, which is
-// what keeps it anchored near the top and keeps the speaker reachable in
-// both states.
-const LEVELS: { level: TermConfidence; label: string; symbol: string | null; icon?: 'checkmark' }[] = [
-  { level: 'dont-know', label: "Don't know", symbol: '1' },
-  { level: 'somewhat', label: 'Somewhat', symbol: '2' },
-  { level: 'know-well', label: 'Know well', symbol: null, icon: 'checkmark' },
+// A real tooltip, not a centered modal card: `anchor` (the screen-space
+// point the word/row was actually tapped at, captured by the caller from
+// the press event) decides where the compact popup appears — directly
+// under the word by default, or above it when there isn't enough room
+// below the tap point before the screen edge. Tapping anywhere outside it
+// closes it, same as any tooltip. Swiping up (or tapping the "Swipe up
+// for more" hint) grows it in place into the full dictionary-style view;
+// a single `progress` Animated.Value (0 = compact, 1 = expanded) drives
+// position, size, corner radius, and content cross-fade together, so it
+// reads as one surface expanding rather than a page transition.
+const LEVELS: { level: TermConfidence; symbol: string | null; icon?: 'checkmark'; label: string }[] = [
+  { level: 'dont-know', symbol: '1', label: "Don't know" },
+  { level: 'somewhat', symbol: '2', label: 'Somewhat' },
+  { level: 'know-well', symbol: null, icon: 'checkmark', label: 'Know well' },
 ];
 
 const familiarityLevels: { level: TermConfidence; label: string; dotColor: 'rose' | 'amber' | 'primary' }[] = [
@@ -50,36 +49,54 @@ const familiarityLevels: { level: TermConfidence; label: string; dotColor: 'rose
   { level: 'know-well', label: 'Know', dotColor: 'primary' },
 ];
 
-const COMPACT_HEIGHT = 360;
+const COMPACT_WIDTH_FALLBACK = 320;
+const COMPACT_HEIGHT_FALLBACK = 230; // used only for the first frame, before the real content is measured
+const MARGIN = 16;
+const ANCHOR_GAP = 10;
 const DRAG_DISTANCE = 220;
 const RELEASE_DISTANCE_THRESHOLD = 70;
 const RELEASE_VELOCITY_THRESHOLD = 0.6;
-const COMPACT_RATING_BLOCK_HEIGHT = 106;
 
-export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | null; visible: boolean; onClose: () => void }) {
+export function TermDetailSheet({
+  term,
+  visible,
+  anchor,
+  onClose,
+}: {
+  term: TermEntry | null;
+  visible: boolean;
+  /** Screen-space point (e.g. from the press event's pageX/pageY) the popup should appear next to. Falls back to screen-centered if omitted. */
+  anchor?: { x: number; y: number } | null;
+  onClose: () => void;
+}) {
   const theme = useTheme();
   const router = useRouter();
-  const { height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const expandedHeight = windowHeight - insets.top - insets.bottom - Spacing.three;
 
   const [currentId, setCurrentId] = useState(term?.id ?? '');
   const [expanded, setExpanded] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [flashcardAdded, setFlashcardAdded] = useState(false);
   const [quizAdded, setQuizAdded] = useState(false);
+  const [measuredCompactHeight, setMeasuredCompactHeight] = useState(0);
+  const [measuredRatingHintHeight, setMeasuredRatingHintHeight] = useState(0);
   const progress = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
+  // Layout measurements only need to happen once per term — after that,
+  // the collapse animation itself keeps changing the rendered height, and
+  // re-measuring mid-animation would feed that back into the animation's
+  // own target and corrupt it. Frozen per-id rather than a one-shot
+  // boolean so browsing to a different term via a Related Concepts chip
+  // (no remount, just a currentId change) measures fresh again.
+  const measuredCompactForId = useRef<string | null>(null);
+  const measuredRatingHintForId = useRef<string | null>(null);
 
   const activeTerm = termGlossary.find((t) => t.id === currentId) ?? term;
   const termProgress = useTermProgress(currentId);
   const confidence = termProgress?.confidence ?? null;
   const favorited = useIsTermFavorited(currentId);
 
-  // The "press moment" — matches web's togglePopup() → learnTerm(). Fires
-  // whenever a term's sheet becomes visible, and again whenever the
-  // student browses to a different term in place via a Related Concepts
-  // chip, independent of any rating.
   useEffect(() => {
     if (visible && term) {
       setCurrentId(term.id);
@@ -88,6 +105,10 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
     if (!visible) {
       progress.setValue(0);
       setExpanded(false);
+      setMeasuredCompactHeight(0);
+      setMeasuredRatingHintHeight(0);
+      measuredCompactForId.current = null;
+      measuredRatingHintForId.current = null;
     }
   }, [visible, term]);
 
@@ -144,16 +165,74 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
 
   if (!activeTerm) return null;
 
-  const height = progress.interpolate({ inputRange: [0, 1], outputRange: [COMPACT_HEIGHT, expandedHeight] });
-  const borderRadius = progress.interpolate({ inputRange: [0, 1], outputRange: [Radius.xl, 0] });
+  // Compact geometry: sized to its actual measured content (see
+  // onCompactLayout below) rather than a guessed constant, so a short
+  // definition never leaves a dead gap and a long one never gets clipped.
+  const compactWidth = Math.min(COMPACT_WIDTH_FALLBACK, windowWidth - MARGIN * 2);
+  const compactHeight = measuredCompactHeight || COMPACT_HEIGHT_FALLBACK;
+
+  let compactLeft: number;
+  let compactTop: number;
+  if (anchor) {
+    compactLeft = Math.min(Math.max(anchor.x - compactWidth / 2, MARGIN), windowWidth - compactWidth - MARGIN);
+    const spaceBelow = windowHeight - insets.bottom - MARGIN - (anchor.y + ANCHOR_GAP);
+    compactTop =
+      spaceBelow >= compactHeight
+        ? anchor.y + ANCHOR_GAP
+        : Math.max(insets.top + MARGIN, anchor.y - ANCHOR_GAP - compactHeight);
+  } else {
+    compactLeft = (windowWidth - compactWidth) / 2;
+    compactTop = (windowHeight - compactHeight) / 2;
+  }
+
+  const expandedWidth = Math.min(460, windowWidth - MARGIN * 2);
+  const expandedHeight = windowHeight - insets.top - insets.bottom - Spacing.three;
+  const expandedLeft = (windowWidth - expandedWidth) / 2;
+  const expandedTop = insets.top + Spacing.three;
+
+  const left = progress.interpolate({ inputRange: [0, 1], outputRange: [compactLeft, expandedLeft] });
+  const top = progress.interpolate({ inputRange: [0, 1], outputRange: [compactTop, expandedTop] });
+  const width = progress.interpolate({ inputRange: [0, 1], outputRange: [compactWidth, expandedWidth] });
+  const height = progress.interpolate({ inputRange: [0, 1], outputRange: [compactHeight, expandedHeight] });
+  const borderRadius = progress.interpolate({ inputRange: [0, 1], outputRange: [Radius.lg, 0] });
+  const backdropOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.55], extrapolate: 'clamp' });
   const compactOnlyOpacity = progress.interpolate({ inputRange: [0, 0.35], outputRange: [1, 0], extrapolate: 'clamp' });
-  const compactRatingHeight = progress.interpolate({ inputRange: [0, 0.35], outputRange: [COMPACT_RATING_BLOCK_HEIGHT, 0], extrapolate: 'clamp' });
+  const ratingHintHeight = progress.interpolate({
+    inputRange: [0, 0.35],
+    outputRange: [measuredRatingHintHeight || 80, 0],
+    extrapolate: 'clamp',
+  });
   const expandedOnlyOpacity = progress.interpolate({ inputRange: [0.35, 1], outputRange: [0, 1], extrapolate: 'clamp' });
   const expandedOnlyRise = progress.interpolate({ inputRange: [0.35, 1], outputRange: [14, 0], extrapolate: 'clamp' });
-  const hintOpacity = progress.interpolate({ inputRange: [0, 0.2], outputRange: [1, 0], extrapolate: 'clamp' });
 
   const relatedTerms = activeTerm.relatedTermIds.map((id) => termGlossary.find((t) => t.id === id)).filter((t): t is TermEntry => !!t);
   const conditions = getConditionsForTerm(activeTerm);
+
+  // Each measured only once per term (see the refs above) — the outer
+  // measurement covers the pinned header plus the rating/hint block at
+  // its natural (uncollapsed) size, giving the true compact card height;
+  // the inner one covers just the rating/hint block on its own, which is
+  // what the collapse animation above needs as its "fully open" starting
+  // height. Measuring the inner block from a plain, unanimated child
+  // (rather than the Animated.View doing the collapsing) means its
+  // reported size is never itself a product of the animation in progress.
+  function onCompactLayout(e: LayoutChangeEvent) {
+    if (measuredCompactForId.current === currentId) return;
+    const h = Math.ceil(e.nativeEvent.layout.height);
+    if (h > 0) {
+      measuredCompactForId.current = currentId;
+      setMeasuredCompactHeight(h);
+    }
+  }
+
+  function onRatingHintLayout(e: LayoutChangeEvent) {
+    if (measuredRatingHintForId.current === currentId) return;
+    const h = Math.ceil(e.nativeEvent.layout.height);
+    if (h > 0) {
+      measuredRatingHintForId.current = currentId;
+      setMeasuredRatingHintHeight(h);
+    }
+  }
 
   // Not wired to real pronunciation yet — a plain press pulse, no audio
   // call, per feedback. The button and its visual "speaking" state are
@@ -214,29 +293,34 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={[styles.overlayPressable, { backgroundColor: 'rgba(15, 23, 42, 0.45)' }]} onPress={onClose}>
-        <Pressable onPress={(e) => e.stopPropagation()} style={styles.cardOuter}>
-          <Animated.View
-            style={[styles.card, Shadow.raised, { height, borderRadius, backgroundColor: theme.backgroundElement }]}
-            {...(!expanded ? compactPan.panHandlers : null)}>
-            {expanded && (
-              <View {...handlePan.panHandlers} style={styles.handleWrap}>
-                <Pressable onPress={() => animateTo(0)} accessibilityRole="button" accessibilityLabel="Show less" hitSlop={10}>
-                  <View style={[styles.handleBar, { backgroundColor: theme.border }]} />
-                </Pressable>
-              </View>
-            )}
+      <View style={styles.root}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <Animated.View pointerEvents="none" style={[styles.backdrop, { opacity: backdropOpacity }]} />
 
-            <Pressable
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              hitSlop={8}
-              style={({ pressed }) => [styles.closeButton, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
-              <Ionicons name="close" size={16} color={theme.textSecondary} />
-            </Pressable>
+        <Animated.View
+          style={[styles.card, Shadow.raised, { left, top, width, height, borderRadius, backgroundColor: theme.backgroundElement }]}
+          {...(!expanded ? compactPan.panHandlers : null)}>
+          {expanded && (
+            <View {...handlePan.panHandlers} style={styles.handleWrap}>
+              <Pressable onPress={() => animateTo(0)} accessibilityRole="button" accessibilityLabel="Show less" hitSlop={10}>
+                <View style={[styles.handleBar, { backgroundColor: theme.border }]} />
+              </Pressable>
+            </View>
+          )}
 
-            {/* Pinned header — present in both states, never remounts. */}
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            hitSlop={8}
+            style={({ pressed }) => [styles.closeButton, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+            <Ionicons name="close" size={14} color={theme.textSecondary} />
+          </Pressable>
+
+          {/* Everything below is what gets measured for the compact
+              height — always rendered (never conditionally unmounted),
+              so remeasuring on a term/content change is automatic. */}
+          <View onLayout={onCompactLayout}>
             <View style={styles.header}>
               <View style={[styles.tag, { backgroundColor: theme.primaryMuted }]}>
                 <ThemedText themeColor="primary" style={styles.tagText}>
@@ -253,7 +337,7 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
                   hitSlop={10}
                   style={({ pressed }) => [styles.speakerButton, { backgroundColor: theme.primaryMuted }, pressed && styles.pressed]}>
                   <Animated.View style={{ transform: [{ scale: pulse }] }}>
-                    <Ionicons name={speaking ? 'volume-high' : 'volume-medium-outline'} size={16} color={theme.primary} />
+                    <Ionicons name={speaking ? 'volume-high' : 'volume-medium-outline'} size={14} color={theme.primary} />
                   </Animated.View>
                 </Pressable>
               </View>
@@ -263,236 +347,236 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
               </ThemedText>
             </View>
 
-            {/* Compact-only: the confidence rating row — collapses its own
-                height in step with its opacity so the expanded content
-                below doesn't inherit a dead gap once it's gone. */}
-            <Animated.View style={{ height: compactRatingHeight, opacity: compactOnlyOpacity, overflow: 'hidden' }}>
-              <View style={styles.understandingBlock}>
-                <ThemedText themeColor="textSecondary" style={styles.understandingLabel}>
-                  HOW WELL DO YOU KNOW THIS?
-                </ThemedText>
-                <View style={styles.levelsRow}>
-                  {LEVELS.map(({ level, label, symbol, icon }) => {
-                    const active = confidence === level;
-                    const color = levelColor(level);
-                    return (
-                      <Pressable
-                        key={level}
-                        onPress={() => setTermConfidence(currentId, level)}
-                        accessibilityRole="button"
-                        accessibilityLabel={label}
-                        accessibilityState={{ selected: active }}
-                        style={({ pressed }) => [
-                          styles.levelButton,
-                          { backgroundColor: active ? color : levelMutedColor(level), borderColor: color },
-                          pressed && styles.pressed,
-                        ]}>
-                        {icon === 'checkmark' ? (
-                          <Ionicons name="checkmark" size={18} color={active ? '#FFFFFF' : color} />
-                        ) : (
-                          <ThemedText style={[styles.levelSymbol, { color: active ? '#FFFFFF' : color }]}>{symbol}</ThemedText>
-                        )}
-                        <ThemedText style={[styles.levelLabel, { color: active ? '#FFFFFF' : color }]}>{label}</ThemedText>
-                      </Pressable>
-                    );
-                  })}
+            {/* Compact-only: small circular confidence rating + hint.
+                The outer Animated.View collapses its own height in step
+                with its fade, so the expanded content right after it
+                never inherits a dead gap once this is gone; the inner
+                plain View is what's actually measured (see
+                onRatingHintLayout) — it always reports its true natural
+                size, never the outer wrapper's currently-clipped one. */}
+            <Animated.View style={{ height: ratingHintHeight, opacity: compactOnlyOpacity, overflow: 'hidden' }}>
+              <View onLayout={onRatingHintLayout}>
+                <View style={styles.understandingRow}>
+                  <ThemedText themeColor="textSecondary" style={styles.understandingLabel}>
+                    HOW WELL DO YOU KNOW THIS?
+                  </ThemedText>
+                  <View style={styles.circleRow}>
+                    {LEVELS.map(({ level, symbol, icon, label }) => {
+                      const active = confidence === level;
+                      const color = levelColor(level);
+                      return (
+                        <Pressable
+                          key={level}
+                          onPress={() => setTermConfidence(currentId, level)}
+                          accessibilityRole="button"
+                          accessibilityLabel={label}
+                          accessibilityState={{ selected: active }}
+                          style={({ pressed }) => [
+                            styles.circleButton,
+                            { backgroundColor: active ? color : levelMutedColor(level), borderColor: color },
+                            pressed && styles.pressed,
+                          ]}>
+                          {icon === 'checkmark' ? (
+                            <Ionicons name="checkmark" size={15} color={active ? '#FFFFFF' : color} />
+                          ) : (
+                            <ThemedText style={[styles.circleSymbol, { color: active ? '#FFFFFF' : color }]}>{symbol}</ThemedText>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
+
+                <Pressable onPress={() => animateTo(1)} accessibilityRole="button" accessibilityLabel="Show more details" hitSlop={8} style={styles.hintPressable}>
+                  <Ionicons name="chevron-up" size={13} color={theme.textSecondary} />
+                  <ThemedText themeColor="textSecondary" style={styles.hintText}>
+                    Swipe up for more
+                  </ThemedText>
+                </Pressable>
               </View>
             </Animated.View>
+          </View>
 
-            {/* Compact-only: the subtle swipe-up affordance. */}
-            <Animated.View
-              pointerEvents={expanded ? 'none' : 'auto'}
-              style={[styles.hintWrap, { opacity: Animated.multiply(compactOnlyOpacity, hintOpacity) }]}>
-              <Pressable onPress={() => animateTo(1)} accessibilityRole="button" accessibilityLabel="Show more details" hitSlop={10} style={styles.hintPressable}>
-                <Ionicons name="chevron-up" size={16} color={theme.textSecondary} />
-                <ThemedText themeColor="textSecondary" style={styles.hintText}>
-                  Swipe up for more
-                </ThemedText>
-              </Pressable>
-            </Animated.View>
-
-            {/* Expanded-only: the full dictionary-style content. */}
-            <Animated.View
-              style={[styles.expandedWrap, { opacity: expandedOnlyOpacity, transform: [{ translateY: expandedOnlyRise }] }]}
-              pointerEvents={expanded ? 'auto' : 'none'}>
-              <Animated.ScrollView
-                scrollEnabled={expanded}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-                // Android's default view-recycling optimization here
-                // fights the parent card's animated height/transform and
-                // leaves a stale, ghosted duplicate of scrolled-past text
-                // behind — confirmed via the accessibility tree that the
-                // real content only exists once; this was purely a
-                // compositing artifact of the optimization, not a data bug.
-                removeClippedSubviews={false}>
-
-                <View style={[styles.calloutBox, { backgroundColor: theme.backgroundSelected }]}>
-                  <View style={styles.calloutHeader}>
-                    <Ionicons name="color-wand-outline" size={13} color={theme.primary} />
-                    <ThemedText themeColor="primary" style={styles.calloutLabel}>
-                      Simple Explanation
-                    </ThemedText>
-                  </View>
-                  <ThemedText themeColor="textSecondary" style={styles.calloutText}>
-                    {activeTerm.aiExplanation}
+          {/* Expanded-only: the full dictionary-style content. */}
+          <Animated.View
+            style={[styles.expandedWrap, { opacity: expandedOnlyOpacity, transform: [{ translateY: expandedOnlyRise }] }]}
+            pointerEvents={expanded ? 'auto' : 'none'}>
+            <Animated.ScrollView
+              scrollEnabled={expanded}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+              // Android's default view-recycling optimization here fights
+              // the parent card's animated height/transform and leaves a
+              // stale, ghosted duplicate of scrolled-past text behind —
+              // confirmed via the accessibility tree that the real
+              // content only exists once; a compositing artifact, not a
+              // data bug.
+              removeClippedSubviews={false}>
+              <View style={[styles.calloutBox, { backgroundColor: theme.backgroundSelected }]}>
+                <View style={styles.calloutHeader}>
+                  <Ionicons name="color-wand-outline" size={13} color={theme.primary} />
+                  <ThemedText themeColor="primary" style={styles.calloutLabel}>
+                    Simple Explanation
                   </ThemedText>
                 </View>
+                <ThemedText themeColor="textSecondary" style={styles.calloutText}>
+                  {activeTerm.aiExplanation}
+                </ThemedText>
+              </View>
 
-                <View style={styles.sectionLabelRow}>
-                  <Ionicons name="medkit-outline" size={13} color={theme.textSecondary} />
-                  <ThemedText themeColor="textSecondary" style={styles.sectionLabelInline}>
-                    WHY THIS MATTERS CLINICALLY
-                  </ThemedText>
+              <View style={styles.sectionLabelRow}>
+                <Ionicons name="medkit-outline" size={13} color={theme.textSecondary} />
+                <ThemedText themeColor="textSecondary" style={styles.sectionLabelInline}>
+                  WHY THIS MATTERS CLINICALLY
+                </ThemedText>
+              </View>
+              <ThemedText themeColor="textSecondary" style={styles.bodyText}>
+                {activeTerm.clinicalRelevance}
+              </ThemedText>
+
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                COMMON CONDITIONS
+              </ThemedText>
+              {conditions.length > 0 ? (
+                <View style={styles.chipRow}>
+                  {conditions.map((c) => (
+                    <View key={c.id} style={[styles.chip, { borderColor: theme.border, backgroundColor: theme.background }]}>
+                      <ThemedText style={styles.chipText}>{c.title}</ThemedText>
+                      <ThemedText themeColor="textSecondary" style={styles.chipMeta}>
+                        {' '}
+                        · {c.category}
+                      </ThemedText>
+                    </View>
+                  ))}
                 </View>
-                <ThemedText themeColor="textSecondary" style={styles.bodyText}>
-                  {activeTerm.clinicalRelevance}
+              ) : (
+                <ThemedText themeColor="textSecondary" style={styles.mutedText}>
+                  Not yet featured in a Clinical Case.
                 </ThemedText>
+              )}
 
-                <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                  COMMON CONDITIONS
-                </ThemedText>
-                {conditions.length > 0 ? (
+              {relatedTerms.length > 0 && (
+                <>
+                  <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                    RELATED CONCEPTS
+                  </ThemedText>
                   <View style={styles.chipRow}>
-                    {conditions.map((c) => (
-                      <View key={c.id} style={[styles.chip, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                        <ThemedText style={styles.chipText}>{c.title}</ThemedText>
-                        <ThemedText themeColor="textSecondary" style={styles.chipMeta}>
-                          {' '}
-                          · {c.category}
+                    {relatedTerms.map((rt) => (
+                      <Pressable
+                        key={rt.id}
+                        onPress={() => setCurrentId(rt.id)}
+                        style={({ pressed }) => [styles.relatedChip, { backgroundColor: theme.primaryMuted }, pressed && styles.pressed]}>
+                        <ThemedText themeColor="primary" style={styles.relatedChipText}>
+                          {rt.term}
                         </ThemedText>
-                      </View>
+                      </Pressable>
                     ))}
                   </View>
-                ) : (
-                  <ThemedText themeColor="textSecondary" style={styles.mutedText}>
-                    Not yet featured in a Clinical Case.
+                </>
+              )}
+
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                YOUR FAMILIARITY
+              </ThemedText>
+              <View style={styles.familiarityRow}>
+                {familiarityLevels.map(({ level, label, dotColor }) => {
+                  const active = confidence === level;
+                  const accent = theme[dotColor];
+                  const accentMuted = dotColor === 'rose' ? theme.roseMuted : dotColor === 'amber' ? theme.amberMuted : theme.primaryMuted;
+                  return (
+                    <Pressable
+                      key={level}
+                      onPress={() => setTermConfidence(currentId, level)}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected: active }}
+                      style={({ pressed }) => [
+                        styles.familiarityButton,
+                        { borderColor: active ? accent : theme.border, backgroundColor: active ? accentMuted : theme.background },
+                        pressed && styles.pressed,
+                      ]}>
+                      <View style={[styles.dot, { backgroundColor: accent }]} />
+                      <ThemedText style={[styles.familiarityLabel, { color: active ? accent : theme.textSecondary }]}>{label}</ThemedText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                ACTIONS
+              </ThemedText>
+              <View style={styles.actionsGrid}>
+                <Pressable
+                  onPress={() => toggleTermFavorite(currentId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={favorited ? 'Unsave term' : 'Save term'}
+                  accessibilityState={{ selected: favorited }}
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    { borderColor: favorited ? theme.amber : theme.border, backgroundColor: favorited ? theme.amberMuted : theme.background },
+                    pressed && styles.pressed,
+                  ]}>
+                  <Ionicons name={favorited ? 'bookmark' : 'bookmark-outline'} size={15} color={favorited ? theme.amber : theme.primary} />
+                  <ThemedText style={[styles.actionLabel, favorited && { color: theme.amber }]}>{favorited ? 'Saved' : 'Save term'}</ThemedText>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleSaveFlashcard}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create flashcard"
+                  style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
+                  <Ionicons name={flashcardAdded ? 'checkmark' : 'albums-outline'} size={15} color={theme.primary} />
+                  <ThemedText style={styles.actionLabel} numberOfLines={2}>
+                    {flashcardAdded ? 'Added ✓' : 'Create flashcard'}
                   </ThemedText>
-                )}
+                </Pressable>
 
-                {relatedTerms.length > 0 && (
-                  <>
-                    <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                      RELATED CONCEPTS
-                    </ThemedText>
-                    <View style={styles.chipRow}>
-                      {relatedTerms.map((rt) => (
-                        <Pressable
-                          key={rt.id}
-                          onPress={() => setCurrentId(rt.id)}
-                          style={({ pressed }) => [styles.relatedChip, { backgroundColor: theme.primaryMuted }, pressed && styles.pressed]}>
-                          <ThemedText themeColor="primary" style={styles.relatedChipText}>
-                            {rt.term}
-                          </ThemedText>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </>
-                )}
+                <Pressable
+                  onPress={handleQuizMe}
+                  accessibilityRole="button"
+                  accessibilityLabel="Quiz me on this"
+                  style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
+                  <Ionicons name={quizAdded ? 'checkmark' : 'help-circle-outline'} size={15} color={theme.primary} />
+                  <ThemedText style={styles.actionLabel} numberOfLines={2}>
+                    {quizAdded ? 'Quiz created ✓' : 'Quiz me on this'}
+                  </ThemedText>
+                </Pressable>
 
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-                <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                  YOUR FAMILIARITY
-                </ThemedText>
-                <View style={styles.familiarityRow}>
-                  {familiarityLevels.map(({ level, label, dotColor }) => {
-                    const active = confidence === level;
-                    const accent = theme[dotColor];
-                    const accentMuted = dotColor === 'rose' ? theme.roseMuted : dotColor === 'amber' ? theme.amberMuted : theme.primaryMuted;
-                    return (
-                      <Pressable
-                        key={level}
-                        onPress={() => setTermConfidence(currentId, level)}
-                        accessibilityRole="button"
-                        accessibilityLabel={label}
-                        accessibilityState={{ selected: active }}
-                        style={({ pressed }) => [
-                          styles.familiarityButton,
-                          { borderColor: active ? accent : theme.border, backgroundColor: active ? accentMuted : theme.background },
-                          pressed && styles.pressed,
-                        ]}>
-                        <View style={[styles.dot, { backgroundColor: accent }]} />
-                        <ThemedText style={[styles.familiarityLabel, { color: active ? accent : theme.textSecondary }]}>{label}</ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-
-                <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                  ACTIONS
-                </ThemedText>
-                <View style={styles.actionsGrid}>
-                  <Pressable
-                    onPress={() => toggleTermFavorite(currentId)}
-                    accessibilityRole="button"
-                    accessibilityLabel={favorited ? 'Unsave term' : 'Save term'}
-                    accessibilityState={{ selected: favorited }}
-                    style={({ pressed }) => [
-                      styles.actionButton,
-                      { borderColor: favorited ? theme.amber : theme.border, backgroundColor: favorited ? theme.amberMuted : theme.background },
-                      pressed && styles.pressed,
-                    ]}>
-                    <Ionicons name={favorited ? 'bookmark' : 'bookmark-outline'} size={15} color={favorited ? theme.amber : theme.primary} />
-                    <ThemedText style={[styles.actionLabel, favorited && { color: theme.amber }]}>{favorited ? 'Saved' : 'Save term'}</ThemedText>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleSaveFlashcard}
-                    accessibilityRole="button"
-                    accessibilityLabel="Create flashcard"
-                    style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
-                    <Ionicons name={flashcardAdded ? 'checkmark' : 'albums-outline'} size={15} color={theme.primary} />
-                    <ThemedText style={styles.actionLabel} numberOfLines={2}>
-                      {flashcardAdded ? 'Added ✓' : 'Create flashcard'}
-                    </ThemedText>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleQuizMe}
-                    accessibilityRole="button"
-                    accessibilityLabel="Quiz me on this"
-                    style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
-                    <Ionicons name={quizAdded ? 'checkmark' : 'help-circle-outline'} size={15} color={theme.primary} />
-                    <ThemedText style={styles.actionLabel} numberOfLines={2}>
-                      {quizAdded ? 'Quiz created ✓' : 'Quiz me on this'}
-                    </ThemedText>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={handleAskAI}
-                    accessibilityRole="button"
-                    accessibilityLabel="Ask Studium AI"
-                    style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
-                    <Ionicons name="sparkles" size={15} color={theme.primary} />
-                    <ThemedText style={styles.actionLabel} numberOfLines={2}>
-                      Ask Studium AI
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </Animated.ScrollView>
-            </Animated.View>
+                <Pressable
+                  onPress={handleAskAI}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ask Studium AI"
+                  style={({ pressed }) => [styles.actionButton, { borderColor: theme.border, backgroundColor: theme.background }, pressed && styles.pressed]}>
+                  <Ionicons name="sparkles" size={15} color={theme.primary} />
+                  <ThemedText style={styles.actionLabel} numberOfLines={2}>
+                    Ask Studium AI
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </Animated.ScrollView>
           </Animated.View>
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlayPressable: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.four,
   },
-  cardOuter: {
-    width: '100%',
-    maxWidth: 460,
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#0F172A',
   },
   card: {
-    width: '100%',
+    position: 'absolute',
     overflow: 'hidden',
   },
   handleWrap: {
@@ -507,10 +591,10 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: Spacing.three,
-    right: Spacing.three,
-    width: 28,
-    height: 28,
+    top: Spacing.two,
+    right: Spacing.two,
+    width: 24,
+    height: 24,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -520,91 +604,79 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   header: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    gap: 6,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    gap: 5,
   },
   tag: {
     alignSelf: 'flex-start',
     borderRadius: Radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    maxWidth: '78%',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    maxWidth: '72%',
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
   },
   termRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: Spacing.two,
+    gap: 8,
+    marginTop: 2,
   },
   termTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
     flexShrink: 1,
   },
   speakerButton: {
-    width: 32,
-    height: 32,
+    width: 26,
+    height: 26,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   termDefinition: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 19,
   },
-  understandingBlock: {
-    paddingHorizontal: Spacing.four,
+  understandingRow: {
+    paddingHorizontal: Spacing.three,
+    marginTop: Spacing.three,
   },
   understandingLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.4,
-    marginTop: Spacing.four,
-    marginBottom: Spacing.two,
+    letterSpacing: 0.3,
+    marginBottom: 6,
   },
-  levelsRow: {
+  circleRow: {
     flexDirection: 'row',
     gap: 8,
   },
-  levelButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+  circleButton: {
+    width: 30,
+    height: 30,
     borderRadius: Radius.pill,
     borderWidth: 1.5,
-    paddingVertical: 12,
-    minHeight: 48,
-  },
-  levelSymbol: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  levelLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  hintWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: Spacing.three,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleSymbol: {
+    fontSize: 13,
+    fontWeight: '800',
   },
   hintPressable: {
     alignItems: 'center',
-    gap: 2,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 3,
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   hintText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   expandedWrap: {
