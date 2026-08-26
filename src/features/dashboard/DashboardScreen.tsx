@@ -91,7 +91,7 @@ export function DashboardScreen() {
             onViewPlan={goToProgress}
           />
 
-          <DailyCaseCard dailyCase={data.dailyCase} />
+          <DailyCaseCard />
 
           <RecommendedTodayCard
             subjectName={data.recommended.subjectName}

@@ -30,6 +30,11 @@ export type DashboardData = {
   level: number;
   levelName: string;
   nextLesson: { title: string; subject: string; completedCount: number; total: number };
+  // Superseded: DailyCaseCard no longer reads this — it computes the
+  // real, deterministically-rotating case of the day itself from
+  // features/dailycase (11 real ported cases, not this one static
+  // mock). Kept here only so this field isn't a breaking removal for
+  // anything else that happens to read DashboardData's shape.
   dailyCase: {
     title: string;
     category: string;

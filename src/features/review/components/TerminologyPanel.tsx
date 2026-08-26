@@ -1,20 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { termGlossary, type TermEntry } from '@/features/terminology/data';
-import { toggleTermLearned, useLearnedTermIds, useTerminologyStats } from '@/features/terminology/store';
+import { useLearnedTermIds, useTerminologyStats } from '@/features/terminology/store';
+import { TermDetailSheet } from '@/features/terminology/components/TermDetailSheet';
 
 // A starter medical glossary (features/terminology/data.ts — real terms,
 // real definitions) with real, persisted per-term "learned" state
 // (features/terminology/store.ts) — the mobile equivalent of the web
 // app's much larger terminology feature, scoped down to what fits one
 // panel. "Terms learned"/"to review" are genuinely 0 until the student
-// actually taps through terms, not invented numbers.
+// actually taps through terms, not invented numbers. The definition
+// sheet itself (TermDetailSheet) is shared with InteractiveText
+// (components/interactive-text.tsx), so a term tapped here and the same
+// term tapped from a Daily Case narrative are the same "learned" state.
 function TermRow({ term, learned, onPress }: { term: TermEntry; learned: boolean; onPress: () => void }) {
   const theme = useTheme();
   return (
@@ -122,50 +126,7 @@ export function TerminologyPanel() {
         )}
       </View>
 
-      <Modal visible={openTerm !== null} transparent animationType="fade" onRequestClose={() => setOpenTerm(null)}>
-        <Pressable style={styles.overlay} onPress={() => setOpenTerm(null)}>
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-            style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
-            {openTerm && (
-              <>
-                <View style={styles.grabber} />
-                <View style={[styles.tag, { backgroundColor: theme.primaryMuted }]}>
-                  <ThemedText themeColor="primary" style={styles.tagText}>
-                    {openTerm.category}
-                  </ThemedText>
-                </View>
-                <ThemedText style={styles.termTitle}>{openTerm.term}</ThemedText>
-                <ThemedText themeColor="textSecondary" style={styles.termDefinition}>
-                  {openTerm.definition}
-                </ThemedText>
-                <Pressable
-                  onPress={() => toggleTermLearned(openTerm.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={learnedIds.includes(openTerm.id) ? 'Mark as not learned' : 'Mark as learned'}
-                  style={({ pressed }) => [
-                    styles.learnedButton,
-                    {
-                      backgroundColor: learnedIds.includes(openTerm.id) ? theme.primaryMuted : theme.primary,
-                      borderColor: theme.primary,
-                    },
-                    pressed && styles.pressed,
-                  ]}>
-                  <Ionicons
-                    name={learnedIds.includes(openTerm.id) ? 'checkmark-circle' : 'checkmark-circle-outline'}
-                    size={16}
-                    color={learnedIds.includes(openTerm.id) ? theme.primary : '#FFFFFF'}
-                  />
-                  <ThemedText
-                    style={[styles.learnedButtonText, { color: learnedIds.includes(openTerm.id) ? theme.primary : '#FFFFFF' }]}>
-                    {learnedIds.includes(openTerm.id) ? 'Learned' : 'Mark as learned'}
-                  </ThemedText>
-                </Pressable>
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <TermDetailSheet term={openTerm} visible={openTerm !== null} onClose={() => setOpenTerm(null)} />
     </View>
   );
 }
@@ -258,64 +219,5 @@ const styles = StyleSheet.create({
   },
   rowSubtitle: {
     fontSize: 12,
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-  },
-  sheet: {
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.five,
-    gap: 4,
-  },
-  grabber: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: 'rgba(15, 23, 42, 0.15)',
-    alignSelf: 'center',
-    marginBottom: Spacing.three,
-  },
-  tag: {
-    alignSelf: 'flex-start',
-    borderRadius: Radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  tagText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  termTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginTop: Spacing.two,
-  },
-  termDefinition: {
-    fontSize: 14,
-    lineHeight: 21,
-    marginTop: Spacing.two,
-  },
-  learnedButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1.5,
-    paddingVertical: 13,
-    marginTop: Spacing.four,
-    minHeight: 48,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  learnedButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

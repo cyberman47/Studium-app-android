@@ -21,4 +21,13 @@ export const termGlossary: TermEntry[] = [
   { id: 'nystagmus', term: 'Nystagmus', category: 'Neurology', definition: 'Involuntary, rhythmic oscillation of the eyes, often indicating a vestibular or neurological issue.' },
   { id: 'anisocoria', term: 'Anisocoria', category: 'Neurology', definition: 'A condition where the two pupils are unequal in size.' },
   { id: 'jaundice', term: 'Jaundice', category: 'Hepatology', definition: 'Yellowing of the skin and eyes caused by elevated bilirubin levels in the blood.' },
+  // Added so the Daily Medical Case's real narratives (features/dailycase/
+  // data.ts) actually contain words this glossary can highlight — each of
+  // these appears verbatim in at least one real ported case.
+  { id: 'diaphoresis', term: 'Diaphoresis', category: 'General', definition: 'Excessive, often abnormal sweating, frequently associated with a physiological stress response such as a cardiac event.' },
+  { id: 'petechial', term: 'Petechial', category: 'Dermatology', definition: 'Describing petechiae — tiny, pinpoint, non-blanching red or purple spots caused by minor bleeding under the skin.' },
+  { id: 'crepitus', term: 'Crepitus', category: 'General', definition: 'A crackling or grating sensation or sound, here caused by gas trapped within soft tissue.' },
+  { id: 'xanthochromia', term: 'Xanthochromia', category: 'Neurology', definition: 'A yellowish discoloration of cerebrospinal fluid caused by the breakdown of red blood cells, a key sign of subarachnoid hemorrhage.' },
+  { id: 'ophthalmoplegia', term: 'Ophthalmoplegia', category: 'Neurology', definition: 'Paralysis or weakness of one or more of the muscles that control eye movement.' },
+  { id: 'pleuritic', term: 'Pleuritic', category: 'Respiratory', definition: 'Describing pain that worsens with breathing or coughing, typically from inflammation of the lining around the lungs.' },
 ];
