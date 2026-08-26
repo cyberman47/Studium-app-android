@@ -8,9 +8,9 @@
 //
 // aiExplanation/clinicalRelevance/relatedTermIds mirror the extra fields
 // the web app's Term type carries (lib/terminology.ts) and power the
-// expanded term panel (components/ExpandedTermPanel.tsx) — real authored
-// content for every term here, not generated text, same standard as the
-// definitions themselves.
+// expanded view inside TermDetailSheet (components/TermDetailSheet.tsx)
+// — real authored content for every term here, not generated text, same
+// standard as the definitions themselves.
 export type TermEntry = {
   id: string;
   term: string;

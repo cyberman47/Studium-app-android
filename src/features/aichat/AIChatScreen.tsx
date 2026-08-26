@@ -81,8 +81,8 @@ export function AIChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  // "Ask Studium AI" from a term's expanded panel (features/terminology/
-  // components/ExpandedTermPanel.tsx) arrives here with ?term=<name> —
+  // "Ask Studium AI" from a term's expanded view (features/terminology/
+  // components/TermDetailSheet.tsx) arrives here with ?term=<name> —
   // reuses the exact same "attached lesson" context mechanism the Lesson
   // picker already feeds into craftReply()/deriveTitle() below, rather
   // than inventing a second, parallel context channel.
