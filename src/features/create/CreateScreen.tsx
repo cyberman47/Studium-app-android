@@ -29,9 +29,10 @@ type CreateOption = {
 // feature that exists, Studium AI chat. New Word opens the reusable
 // VocabularyWordCard (features/vocabulary/) — a progressive-disclosure
 // word-lookup card (compact translation → swipe up for the full
-// dictionary view) with real, persisted save/study state and real
-// on-device pronunciation, shown with one realistic placeholder word
-// since there's no real vocabulary-lookup backend behind it yet.
+// dictionary view) with real, persisted save/study state, shown with
+// one realistic placeholder word since there's no real vocabulary-
+// lookup backend behind it yet. The speaker button is a plain, unwired
+// press affordance for now — no real pronunciation audio.
 export function CreateScreen() {
   const theme = useTheme();
   const router = useRouter();

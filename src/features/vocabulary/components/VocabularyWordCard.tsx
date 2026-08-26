@@ -16,7 +16,6 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { speakWord } from '../pronunciation';
 import { toggleVocabularyKnown, toggleVocabularySaved, toggleVocabularyStudyList, useKnownVocabularyIds, useSavedVocabularyIds, useStudyListVocabularyIds } from '../store';
 import { type VocabularyWord } from '../types';
 import { addFlashcardSet } from '@/features/mycontent/store';
@@ -130,8 +129,15 @@ export function VocabularyWordCard({
   const expandedOnlyRise = progress.interpolate({ inputRange: [0.35, 1], outputRange: [14, 0], extrapolate: 'clamp' });
   const hintOpacity = progress.interpolate({ inputRange: [0, 0.2], outputRange: [1, 0], extrapolate: 'clamp' });
 
+  // Not wired to real pronunciation yet — deliberately left as a plain
+  // press pulse (no expo-speech, no other audio call) per feedback,
+  // rather than half-wiring something that isn't ready. The button, its
+  // pulse animation, and the `speaking` visual state are still real and
+  // in place so wiring in real TTS later is just filling in this one
+  // function.
   function handleSpeak() {
-    speakWord(word.word, word.speechLocale, () => setSpeaking(true), () => setSpeaking(false));
+    setSpeaking(true);
+    setTimeout(() => setSpeaking(false), 500);
   }
 
   function handleCreateFlashcard() {

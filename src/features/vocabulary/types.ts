@@ -30,9 +30,11 @@ export type VocabularyWord = {
   id: string;
   word: string;
   language: string;
-  // BCP-47 tag for real on-device text-to-speech (expo-speech), e.g.
-  // "bg-BG" — separate from `language` (a human-readable label) since a
-  // TTS engine needs the exact tag, not a display name.
+  // BCP-47 tag (e.g. "bg-BG") for a future real text-to-speech
+  // integration — separate from `language` (a human-readable label)
+  // since a TTS engine needs the exact tag, not a display name. Not
+  // wired to anything yet; the speaker button is currently a plain,
+  // unwired press affordance (see VocabularyWordCard's handleSpeak).
   speechLocale?: string;
   // Romanized/phonetic reading, shown under the word — not every language
   // needs one (skip for French, show for Bulgarian/Japanese/Arabic).
