@@ -5,17 +5,39 @@ import { loadPersisted, savePersisted } from '@/lib/persistedState';
 import { termGlossary } from './data';
 
 /**
- * Real, working, persisted state for which terms this student has marked
- * learned — genuinely empty until they actually tap through the
- * glossary, same honesty as every other "no real backend yet" feature
- * this session (Settings' Reader/Review, mycontent's notes/flashcards).
- * "Terms to review" is just glossary.length minus this, not a second
- * tracked number, so the two can never drift out of sync.
+ * Real, working, persisted per-term progress — mirrors the web app's own
+ * two-part model (lib/terminology.ts there): pressing a term adds it to
+ * the library immediately (inLibrary), independent of whether it's ever
+ * rated; rating it (dont-know / somewhat / know-well) is a separate,
+ * optional step layered on top. Genuinely empty until the student
+ * actually taps through the glossary — same honesty as every other "no
+ * real backend yet" feature this session.
  */
 
-const KEY = 'studium_terminology_learned';
+export type TermConfidence = 'dont-know' | 'somewhat' | 'know-well';
 
-let learnedIds: string[] = [];
+export type TermProgress = {
+  inLibrary: boolean;
+  confidence: TermConfidence | null;
+};
+
+// unknown: never pressed — the yellow "haven't looked at this yet" state.
+// learning: pressed (in the library) but not rated "know-well" — still
+// worth another look, so it stays visibly interactive, just not yellow.
+// mastered: rated "know-well" — blends into normal reading text, but
+// (per feedback) never becomes non-interactive — tapping it still
+// reopens the same real definition/rating sheet.
+export type MasteryTier = 'unknown' | 'learning' | 'mastered';
+
+export function getMasteryTier(progress: TermProgress | undefined): MasteryTier {
+  if (!progress?.inLibrary) return 'unknown';
+  if (progress.confidence === 'know-well') return 'mastered';
+  return 'learning';
+}
+
+const KEY = 'studium_terminology_progress';
+
+let progressMap: Record<string, TermProgress> = {};
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -27,25 +49,42 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-loadPersisted<string[]>(KEY, []).then((loaded) => {
-  learnedIds = loaded;
+loadPersisted<Record<string, TermProgress>>(KEY, {}).then((loaded) => {
+  progressMap = loaded;
   emit();
 });
 
-export function useLearnedTermIds(): string[] {
-  return useSyncExternalStore(subscribe, () => learnedIds);
+export function useTermProgressMap(): Record<string, TermProgress> {
+  return useSyncExternalStore(subscribe, () => progressMap);
 }
 
-export function toggleTermLearned(id: string) {
-  learnedIds = learnedIds.includes(id) ? learnedIds.filter((t) => t !== id) : [...learnedIds, id];
+export function useTermProgress(id: string): TermProgress | undefined {
+  return useTermProgressMap()[id];
+}
+
+// The "press moment" — opening a term's definition. Idempotent: pressing
+// an already-in-library term again is a no-op, same as the web app's
+// learnTerm(). This is what makes "tap a yellow word" alone enough to
+// add it to your terminology, before any rating happens.
+export function recordTermPressed(id: string) {
+  const existing = progressMap[id];
+  if (existing?.inLibrary) return;
+  progressMap = { ...progressMap, [id]: { inLibrary: true, confidence: existing?.confidence ?? null } };
   emit();
-  savePersisted(KEY, learnedIds);
+  savePersisted(KEY, progressMap);
+}
+
+export function setTermConfidence(id: string, confidence: TermConfidence) {
+  progressMap = { ...progressMap, [id]: { inLibrary: true, confidence } };
+  emit();
+  savePersisted(KEY, progressMap);
 }
 
 export function useTerminologyStats() {
-  const learned = useLearnedTermIds();
+  const map = useTermProgressMap();
+  const learnedCount = termGlossary.filter((t) => map[t.id]?.confidence === 'know-well').length;
   return {
-    learnedCount: learned.length,
-    toReviewCount: Math.max(0, termGlossary.length - learned.length),
+    learnedCount,
+    toReviewCount: Math.max(0, termGlossary.length - learnedCount),
   };
 }

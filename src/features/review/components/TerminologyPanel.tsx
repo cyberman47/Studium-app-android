@@ -7,33 +7,43 @@ import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { termGlossary, type TermEntry } from '@/features/terminology/data';
-import { useLearnedTermIds, useTerminologyStats } from '@/features/terminology/store';
+import { getMasteryTier, useTerminologyStats, useTermProgressMap, type MasteryTier } from '@/features/terminology/store';
 import { TermDetailSheet } from '@/features/terminology/components/TermDetailSheet';
 
 // A starter medical glossary (features/terminology/data.ts — real terms,
-// real definitions) with real, persisted per-term "learned" state
-// (features/terminology/store.ts) — the mobile equivalent of the web
+// real definitions) with real, persisted per-term progress
+// (features/terminology/store.ts: pressed → in library, then an optional
+// dont-know/somewhat/know-well rating) — the mobile equivalent of the web
 // app's much larger terminology feature, scoped down to what fits one
 // panel. "Terms learned"/"to review" are genuinely 0 until the student
 // actually taps through terms, not invented numbers. The definition
 // sheet itself (TermDetailSheet) is shared with InteractiveText
 // (components/interactive-text.tsx), so a term tapped here and the same
-// term tapped from a Daily Case narrative are the same "learned" state.
-function TermRow({ term, learned, onPress }: { term: TermEntry; learned: boolean; onPress: () => void }) {
+// term tapped from a Daily Case narrative are the same progress state.
+const TIER_META: Record<MasteryTier, { icon: keyof typeof Ionicons.glyphMap; label: string }> = {
+  unknown: { icon: 'book-outline', label: '' },
+  learning: { icon: 'time-outline', label: ', in progress' },
+  mastered: { icon: 'checkmark', label: ', learned' },
+};
+
+function TermRow({ term, tier, onPress }: { term: TermEntry; tier: MasteryTier; onPress: () => void }) {
   const theme = useTheme();
+  const meta = TIER_META[tier];
+  const iconBg = tier === 'mastered' ? theme.primaryMuted : tier === 'learning' ? theme.roseMuted : theme.backgroundSelected;
+  const iconColor = tier === 'mastered' ? theme.primary : tier === 'learning' ? theme.rose : theme.textSecondary;
   return (
     <View style={[styles.rowShadow, Shadow.card]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${term.term}, ${term.category}${learned ? ', learned' : ''}`}
+        accessibilityLabel={`${term.term}, ${term.category}${meta.label}`}
         style={({ pressed }) => [
           styles.row,
           { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           pressed && { backgroundColor: theme.backgroundSelected },
         ]}>
-        <View style={[styles.icon, { backgroundColor: learned ? theme.primaryMuted : theme.backgroundSelected }]}>
-          <Ionicons name={learned ? 'checkmark' : 'book-outline'} size={16} color={learned ? theme.primary : theme.textSecondary} />
+        <View style={[styles.icon, { backgroundColor: iconBg }]}>
+          <Ionicons name={meta.icon} size={16} color={iconColor} />
         </View>
         <View style={styles.rowText}>
           <ThemedText numberOfLines={1} style={styles.rowTitle}>
@@ -52,7 +62,7 @@ function TermRow({ term, learned, onPress }: { term: TermEntry; learned: boolean
 export function TerminologyPanel() {
   const theme = useTheme();
   const { learnedCount, toReviewCount } = useTerminologyStats();
-  const learnedIds = useLearnedTermIds();
+  const progressMap = useTermProgressMap();
   const [query, setQuery] = useState('');
   const [openTerm, setOpenTerm] = useState<TermEntry | null>(null);
 
@@ -62,7 +72,16 @@ export function TerminologyPanel() {
     return termGlossary.filter((t) => t.term.toLowerCase().includes(q) || t.category.toLowerCase().includes(q));
   }, [query]);
 
-  const recentlySaved = [...termGlossary].filter((t) => learnedIds.includes(t.id)).slice(-3).reverse();
+  // Object key insertion order tracks press order (a term's key is created
+  // once, on first press, and never re-created by a later rating), so this
+  // reads as "most recently pressed" the same way the old array-append
+  // model did.
+  const recentlyActiveIds = Object.keys(progressMap).filter((id) => progressMap[id]?.inLibrary);
+  const recentlySaved = recentlyActiveIds
+    .map((id) => termGlossary.find((t) => t.id === id))
+    .filter((t): t is TermEntry => !!t)
+    .slice(-3)
+    .reverse();
 
   return (
     <View style={styles.wrap}>
@@ -103,7 +122,7 @@ export function TerminologyPanel() {
           </ThemedText>
           <View style={styles.list}>
             {recentlySaved.map((t) => (
-              <TermRow key={t.id} term={t} learned onPress={() => setOpenTerm(t)} />
+              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={() => setOpenTerm(t)} />
             ))}
           </View>
         </View>
@@ -120,7 +139,7 @@ export function TerminologyPanel() {
         ) : (
           <View style={styles.list}>
             {filtered.map((t) => (
-              <TermRow key={t.id} term={t} learned={learnedIds.includes(t.id)} onPress={() => setOpenTerm(t)} />
+              <TermRow key={t.id} term={t} tier={getMasteryTier(progressMap[t.id])} onPress={() => setOpenTerm(t)} />
             ))}
           </View>
         )}
