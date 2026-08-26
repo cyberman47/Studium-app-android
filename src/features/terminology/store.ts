@@ -88,3 +88,45 @@ export function useTerminologyStats() {
     toReviewCount: Math.max(0, termGlossary.length - learnedCount),
   };
 }
+
+/**
+ * "Save term" — a separate real bookmark, independent of confidence
+ * rating (mirrors the web app's own isTermFavorited/toggleTermFavorite
+ * in lib/terminology.ts: favoriting and rating are two different signals
+ * — you might favorite a term you already know well just to keep it
+ * handy, or not favorite one you're still rating "don't know").
+ */
+const FAVORITES_KEY = 'studium_terminology_favorites';
+
+let favoriteIds: string[] = [];
+const favoriteListeners = new Set<() => void>();
+
+function emitFavorites() {
+  favoriteListeners.forEach((l) => l());
+}
+
+function subscribeFavorites(listener: () => void) {
+  favoriteListeners.add(listener);
+  return () => favoriteListeners.delete(listener);
+}
+
+loadPersisted<string[]>(FAVORITES_KEY, []).then((loaded) => {
+  favoriteIds = loaded;
+  emitFavorites();
+});
+
+export function useFavoriteTermIds(): string[] {
+  return useSyncExternalStore(subscribeFavorites, () => favoriteIds);
+}
+
+export function useIsTermFavorited(id: string): boolean {
+  return useFavoriteTermIds().includes(id);
+}
+
+export function toggleTermFavorite(id: string): boolean {
+  const nowFavorited = !favoriteIds.includes(id);
+  favoriteIds = nowFavorited ? [...favoriteIds, id] : favoriteIds.filter((t) => t !== id);
+  emitFavorites();
+  savePersisted(FAVORITES_KEY, favoriteIds);
+  return nowFavorited;
+}

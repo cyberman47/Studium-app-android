@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { type TermEntry } from '../data';
 import { recordTermPressed, setTermConfidence, type TermConfidence, useTermProgress } from '../store';
+import { ExpandedTermPanel } from './ExpandedTermPanel';
 
 // The definition sheet a term opens into — shared by Review > Terminology
 // and InteractiveText (components/interactive-text.tsx), so a term tapped
@@ -34,12 +35,16 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
   const theme = useTheme();
   const progress = useTermProgress(term?.id ?? '');
   const confidence = progress?.confidence ?? null;
+  const [expanded, setExpanded] = useState(false);
 
   // The "press moment" — matches web's togglePopup() → learnTerm(). Fires
   // whenever a term's sheet becomes visible, independent of any rating.
   useEffect(() => {
     if (visible && term) {
       recordTermPressed(term.id);
+    }
+    if (!visible) {
+      setExpanded(false);
     }
   }, [visible, term]);
 
@@ -54,9 +59,16 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
     return theme.primaryMuted;
   };
 
+  // Two independent top-level Modals, not one nested inside the other:
+  // React Native's <Modal> renders nothing at all while its own `visible`
+  // is false, including any child Modal inside it — nesting ExpandedTermPanel's
+  // Modal inside this one would mean toggling this Modal off (to hide the
+  // quick card while expanded) also unmounts the expanded panel before it
+  // ever gets a chance to show.
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose}>
+    <>
+      <Modal visible={visible && !expanded} transparent animationType="fade" onRequestClose={onClose}>
+        <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable onPress={(e) => e.stopPropagation()} style={[styles.sheet, { backgroundColor: theme.backgroundElement }]}>
           {term && (
             <>
@@ -110,11 +122,34 @@ export function TermDetailSheet({ term, visible, onClose }: { term: TermEntry | 
                   );
                 })}
               </View>
+
+              <Pressable
+                onPress={() => setExpanded(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Expand for more detail"
+                style={({ pressed }) => [styles.expandButton, pressed && styles.pressed]}>
+                <ThemedText themeColor="primary" style={styles.expandButtonText}>
+                  Expand for more detail
+                </ThemedText>
+                <Ionicons name="arrow-forward" size={13} color={theme.primary} />
+              </Pressable>
             </>
           )}
         </Pressable>
-      </Pressable>
-    </Modal>
+        </Pressable>
+      </Modal>
+
+      {term && (
+        <ExpandedTermPanel
+          initialTermId={term.id}
+          visible={visible && expanded}
+          onClose={() => {
+            setExpanded(false);
+            onClose();
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -201,5 +236,17 @@ const styles = StyleSheet.create({
   levelLabel: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: Spacing.three,
+    paddingVertical: 8,
+  },
+  expandButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

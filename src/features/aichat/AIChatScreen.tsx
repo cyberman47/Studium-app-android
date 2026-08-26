@@ -74,15 +74,20 @@ function deriveTitle(messages: ChatMessage[], lessonTitle: string | undefined): 
 export function AIChatScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { session: sessionParam } = useLocalSearchParams<{ session?: string }>();
+  const { session: sessionParam, term: termParam } = useLocalSearchParams<{ session?: string; term?: string }>();
   const aiSettings = useAISettings();
   const chatSettings = useChatSettings();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  // "Ask Studium AI" from a term's expanded panel (features/terminology/
+  // components/ExpandedTermPanel.tsx) arrives here with ?term=<name> —
+  // reuses the exact same "attached lesson" context mechanism the Lesson
+  // picker already feeds into craftReply()/deriveTitle() below, rather
+  // than inventing a second, parallel context channel.
   const [selectedLesson, setSelectedLesson] = useState<string | undefined>(
-    aiSettings.autoAttachLesson ? recentLessons[0]?.title : undefined,
+    termParam ?? (aiSettings.autoAttachLesson ? recentLessons[0]?.title : undefined),
   );
   const [lessonSheetVisible, setLessonSheetVisible] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);

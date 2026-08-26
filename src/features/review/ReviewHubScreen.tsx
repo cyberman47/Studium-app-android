@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,7 +23,22 @@ import { TerminologyPanel } from './components/TerminologyPanel';
 // session preferences, an unrelated screen).
 export function ReviewHubScreen() {
   const theme = useTheme();
-  const [section, setSection] = useState<ReviewSection>('flashcards');
+  // Lets a "Quiz me on this" / similar deep-link (router.push('/review?
+  // section=quizzes')) land directly on the right segment. Review lives
+  // inside the bottom tab bar, so navigating to it from elsewhere doesn't
+  // remount this screen if it's already mounted — reading sectionParam
+  // only as useState's initial value would silently no-op on a second
+  // deep-link while already on this tab. Reacting to it in an effect
+  // instead means every deep-link actually switches the segment, not just
+  // the first one.
+  const { section: sectionParam } = useLocalSearchParams<{ section?: ReviewSection }>();
+  const [section, setSection] = useState<ReviewSection>(sectionParam ?? 'flashcards');
+
+  useEffect(() => {
+    if (sectionParam) {
+      setSection(sectionParam);
+    }
+  }, [sectionParam]);
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
