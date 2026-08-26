@@ -26,7 +26,12 @@ type CreateOption = {
 // "there's no file-import pipeline wired up"), so it's an honest,
 // working "not connected yet" notice rather than a silent dead tap or a
 // disabled-looking button. AI Study Set routes to the one real AI
-// feature that exists, Studium AI chat.
+// feature that exists, Studium AI chat. New Word opens the reusable
+// VocabularyWordCard (features/vocabulary/) — a progressive-disclosure
+// word-lookup card (compact translation → swipe up for the full
+// dictionary view) with real, persisted save/study state and real
+// on-device pronunciation, shown with one realistic placeholder word
+// since there's no real vocabulary-lookup backend behind it yet.
 export function CreateScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -64,6 +69,13 @@ export function CreateScreen() {
       title: 'New Quiz',
       subtitle: 'Write your own multiple-choice questions',
       onPress: () => router.push('/new-quiz'),
+    },
+    {
+      key: 'new-word',
+      icon: 'language-outline',
+      title: 'New Word',
+      subtitle: 'Look up a word with pronunciation and grammar',
+      onPress: () => router.push('/new-word'),
     },
     {
       key: 'import',
