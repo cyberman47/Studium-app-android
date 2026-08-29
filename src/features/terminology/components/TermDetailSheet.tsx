@@ -56,6 +56,10 @@ const ANCHOR_GAP = 10;
 const DRAG_DISTANCE = 220;
 const RELEASE_DISTANCE_THRESHOLD = 70;
 const RELEASE_VELOCITY_THRESHOLD = 0.6;
+// Fixed-size expand handle above the measured content block (see
+// onCompactLayout) — not itself measured, so its own known height is
+// added on top rather than left to silently overflow the card's bounds.
+const EXPAND_HANDLE_HEIGHT = 26;
 
 export function TermDetailSheet({
   term,
@@ -169,7 +173,7 @@ export function TermDetailSheet({
   // onCompactLayout below) rather than a guessed constant, so a short
   // definition never leaves a dead gap and a long one never gets clipped.
   const compactWidth = Math.min(COMPACT_WIDTH_FALLBACK, windowWidth - MARGIN * 2);
-  const compactHeight = measuredCompactHeight || COMPACT_HEIGHT_FALLBACK;
+  const compactHeight = (measuredCompactHeight || COMPACT_HEIGHT_FALLBACK) + EXPAND_HANDLE_HEIGHT;
 
   let compactLeft: number;
   let compactTop: number;
@@ -194,7 +198,7 @@ export function TermDetailSheet({
   const top = progress.interpolate({ inputRange: [0, 1], outputRange: [compactTop, expandedTop] });
   const width = progress.interpolate({ inputRange: [0, 1], outputRange: [compactWidth, expandedWidth] });
   const height = progress.interpolate({ inputRange: [0, 1], outputRange: [compactHeight, expandedHeight] });
-  const borderRadius = progress.interpolate({ inputRange: [0, 1], outputRange: [Radius.lg, 0] });
+  const borderRadius = progress.interpolate({ inputRange: [0, 1], outputRange: [Radius.lg, Radius.xl] });
   const backdropOpacity = progress.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.55], extrapolate: 'clamp' });
   const compactOnlyOpacity = progress.interpolate({ inputRange: [0, 0.35], outputRange: [1, 0], extrapolate: 'clamp' });
   const ratingHintHeight = progress.interpolate({
@@ -300,12 +304,28 @@ export function TermDetailSheet({
         <Animated.View
           style={[styles.card, Shadow.raised, { left, top, width, height, borderRadius, backgroundColor: theme.backgroundElement }]}
           {...(!expanded ? compactPan.panHandlers : null)}>
-          {expanded && (
+          {expanded ? (
             <View {...handlePan.panHandlers} style={styles.handleWrap}>
               <Pressable onPress={() => animateTo(0)} accessibilityRole="button" accessibilityLabel="Show less" hitSlop={10}>
                 <View style={[styles.handleBar, { backgroundColor: theme.border }]} />
               </Pressable>
             </View>
+          ) : (
+            // Mirrors the expanded state's own handle, one level up: a
+            // visible expand cue sitting above everything else in the
+            // popup, not just the "Swipe up for more" text buried below
+            // the rating row — so the option to go deeper is obvious
+            // before reading any of the compact content.
+            <Pressable
+              onPress={() => animateTo(1)}
+              accessibilityRole="button"
+              accessibilityLabel="Expand for more detail"
+              hitSlop={10}
+              style={({ pressed }) => [styles.expandHandleWrap, pressed && styles.pressed]}>
+              <View style={[styles.expandHandleChevron, { backgroundColor: theme.backgroundSelected }]}>
+                <Ionicons name="chevron-up" size={14} color={theme.textSecondary} />
+              </View>
+            </Pressable>
           )}
 
           <Pressable
@@ -588,6 +608,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: Radius.pill,
+  },
+  expandHandleWrap: {
+    alignItems: 'center',
+    paddingTop: Spacing.two,
+    paddingBottom: 2,
+  },
+  expandHandleChevron: {
+    width: 26,
+    height: 16,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeButton: {
     position: 'absolute',
