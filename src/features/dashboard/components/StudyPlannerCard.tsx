@@ -7,10 +7,10 @@ import { useTheme } from '@/hooks/use-theme';
 
 // A compact Study Planner preview — used on both Home (per the new
 // dashboard hierarchy) and the Learn tab's "Study Planner" section, so
-// switching a track or exam date only needs updating in one place. The
-// full detail (weekly activity, exam readiness, mastery breakdown) lives
-// at /progress via "View plan" — this card is deliberately just three
-// facts, not a second copy of that screen.
+// switching a track or exam date only needs updating in one place. Tapping
+// it opens /study-planner — the real wizard + AI-generated weekly plan —
+// not /progress, which is exam-readiness/mastery tracking, a separate
+// concern.
 export function StudyPlannerCard({
   pathLabel,
   daysToExam,

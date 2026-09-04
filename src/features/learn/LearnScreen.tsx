@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +12,7 @@ import { useRealDashboardStats } from '@/features/dashboard/remote';
 import { LibraryPreviewCard } from '@/features/library/components/LibraryPreviewCard';
 import { StudyingPathsSection } from '@/features/study/components/StudyingPathsSection';
 import { useTheme } from '@/hooks/use-theme';
+import { getPlannerHomeSnapshot, PlannerHomeSnapshot } from '@/lib/studyPlanner';
 
 // "What am I learning?" — the mobile equivalent of the desktop's STUDY
 // group (Learning Paths + Study Planner), plus Library, which moved here
@@ -29,9 +31,25 @@ export function LearnScreen() {
   const { loading, stats } = useRealDashboardStats();
   const pathLabel = stats?.pathLabel ?? mockDashboard.pathLabel;
   const pathEmoji = stats?.pathEmoji ?? mockDashboard.pathEmoji;
-  const daysToExam = mockDashboard.daysToExam;
   const todayKP = stats?.todayKP ?? mockDashboard.todayKP;
   const targetKP = mockDashboard.targetKP;
+
+  // Same real Study Planner snapshot Home's dashboard reads — see
+  // features/dashboard/DashboardScreen.tsx's own comment on why this
+  // reads on every focus, not just mount.
+  const [plannerSnapshot, setPlannerSnapshot] = useState<PlannerHomeSnapshot | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getPlannerHomeSnapshot().then((snapshot) => {
+        if (!cancelled) setPlannerSnapshot(snapshot);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+  const daysToExam = plannerSnapshot ? plannerSnapshot.daysToExam : mockDashboard.daysToExam;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -54,7 +72,7 @@ export function LearnScreen() {
               pathLabel={pathLabel}
               daysToExam={daysToExam}
               streakSecured={todayKP >= targetKP}
-              onViewPlan={() => router.push('/progress')}
+              onViewPlan={() => router.push('/study-planner')}
             />
           </View>
 

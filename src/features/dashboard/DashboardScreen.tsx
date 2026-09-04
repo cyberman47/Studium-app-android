@@ -1,10 +1,12 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { getPlannerHomeSnapshot, PlannerHomeSnapshot } from '@/lib/studyPlanner';
 
 import { ContinueCard } from './components/ContinueCard';
 import { DailyCaseCard } from './components/DailyCaseCard';
@@ -27,14 +29,38 @@ import { useRealDashboardStats } from './remote';
 export function DashboardScreen() {
   const theme = useTheme();
   const router = useRouter();
-  // Identity/progress fields (name, avatar, streak, KP, level, path,
+  // Identity/progress fields (name, avatar, streak, total KP, level, path,
   // leaderboard's top row) are real once this resolves — see remote.ts for
-  // exactly which fields and why. Everything else on this screen (Continue
-  // Studying, Daily Case, Recommended, exam readiness/mastery %, days to
-  // exam, study time) has no real per-user backend yet, so it stays mock
-  // regardless. Falls back to the mock identity fields while the fetch is
-  // in flight right after login, rather than a blank/zeroed header.
+  // exactly which fields and why. Days-to-exam and the KP-goal chip are
+  // also real now (see plannerSnapshot below), sourced from the Study
+  // Planner instead of Supabase. Everything else on this screen (Continue
+  // Studying, Daily Case, Recommended, exam readiness/mastery %, study
+  // time) still has no real per-user backend yet, so it stays mock.
+  // Falls back to the mock identity fields while the fetch is in flight
+  // right after login, rather than a blank/zeroed header.
   const { loading, stats } = useRealDashboardStats();
+
+  // Real "days to exam" / plan-KP chips, sourced from the student's own
+  // real generated Study Planner plan (lib/studyPlanner.ts) rather than
+  // the static mock that used to sit here regardless of account — see
+  // getPlannerHomeSnapshot's own comment for why "KP" means "tasks done
+  // in this week's real plan" rather than the separate (still-mock)
+  // daily-streak KP system. Re-read on every focus, not just mount, so
+  // generating a new plan or checking off a task on the Study Planner
+  // screen is reflected the moment the student comes back to Home.
+  const [plannerSnapshot, setPlannerSnapshot] = useState<PlannerHomeSnapshot | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getPlannerHomeSnapshot().then((snapshot) => {
+        if (!cancelled) setPlannerSnapshot(snapshot);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
+
   const data: DashboardData = stats
     ? {
         ...mockDashboard,
@@ -45,6 +71,7 @@ export function DashboardScreen() {
         streakDays: stats.streakDays,
         totalKP: stats.totalKP,
         todayKP: stats.todayKP,
+        daysToExam: plannerSnapshot ? plannerSnapshot.daysToExam : mockDashboard.daysToExam,
         level: stats.level,
         levelName: stats.levelName,
         weeklyKP: { earned: stats.weeklyKPEarned, target: mockDashboard.weeklyKP.target },
@@ -55,9 +82,21 @@ export function DashboardScreen() {
             ]
           : mockDashboard.leaderboard,
       }
-    : mockDashboard;
+    : plannerSnapshot
+      ? { ...mockDashboard, daysToExam: plannerSnapshot.daysToExam }
+      : mockDashboard;
+  // Deliberately NOT the same numbers as StatsRow's Plan KP chip below —
+  // AppHeader's streak pill is real-when-available daily-streak KP (see
+  // remote.ts: todayKP always 0 today, no real per-day backend exists
+  // yet), a genuinely different fact from "tasks done in this week's
+  // Study Planner plan." Feeding plannerSnapshot's numbers into the
+  // streak pill would make it claim a daily streak was secured by
+  // checking off plan tasks, which isn't true.
   const goToProgress = () => router.push('/progress');
+  const goToStudyPlanner = () => router.push('/study-planner');
   const streakSecured = data.todayKP >= data.targetKP;
+  const planKpEarned = plannerSnapshot ? plannerSnapshot.planKpEarned : mockDashboard.todayKP;
+  const planKpTarget = plannerSnapshot ? plannerSnapshot.planKpTarget : mockDashboard.targetKP;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -85,10 +124,10 @@ export function DashboardScreen() {
 
           <StatsRow
             daysToExam={data.daysToExam}
-            todayKP={data.todayKP}
-            targetKP={data.targetKP}
+            planKpEarned={planKpEarned}
+            planKpTarget={planKpTarget}
             studyTimeToday={data.studyTimeToday}
-            onViewPlan={goToProgress}
+            onViewPlan={goToStudyPlanner}
           />
 
           <DailyCaseCard />
@@ -106,7 +145,7 @@ export function DashboardScreen() {
             pathLabel={data.pathLabel}
             daysToExam={data.daysToExam}
             streakSecured={streakSecured}
-            onViewPlan={goToProgress}
+            onViewPlan={goToStudyPlanner}
           />
 
           <HomeListSection
