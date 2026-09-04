@@ -8,15 +8,14 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { WEBSITE_URL } from '@/lib/config';
 
-// Reached from More > About Studium and Settings > App > About Studium —
-// one real screen, two entry points. Terms/Privacy/Licenses link out to
-// studium-website's own real pages (app/terms, app/privacy, app/licenses
-// there) rather than duplicating that content natively.
-const websiteUrl = 'https://studium-website-three.vercel.app';
-const termsUrl = `${websiteUrl}/terms`;
-const privacyUrl = `${websiteUrl}/privacy`;
-const licensesUrl = `${websiteUrl}/licenses`;
+// Reached from Settings > Support > About Studium. Terms/Privacy/Licenses
+// link out to studium-website's own real pages (app/terms, app/privacy,
+// app/licenses there) rather than duplicating that content natively.
+const termsUrl = `${WEBSITE_URL}/terms`;
+const privacyUrl = `${WEBSITE_URL}/privacy`;
+const licensesUrl = `${WEBSITE_URL}/licenses`;
 
 export function AboutScreen() {
   const theme = useTheme();
@@ -86,7 +85,7 @@ export function AboutScreen() {
               iconBackground={theme.primaryMuted}
               title="Studium Website"
               subtitle="studium-website-three.vercel.app"
-              onPress={() => Linking.openURL(websiteUrl)}
+              onPress={() => Linking.openURL(WEBSITE_URL)}
             />
           </GroupedList>
 

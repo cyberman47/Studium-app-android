@@ -10,7 +10,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 const categories = ['Bug report', 'Feature request', 'Content feedback', 'General feedback'];
 
-// Settings > App > Give Feedback. No real inbox is connected to receive
+// Settings > Support > Give Feedback. No real inbox is connected to receive
 // this yet, so "Send Feedback" doesn't silently pretend to submit
 // anywhere — it shows a genuine, working confirmation state, and the
 // category + message are real component state ready for a real endpoint

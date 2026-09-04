@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-// Settings > App > Subscription. No billing system is connected yet
+// Settings > Account > Subscription. No billing system is connected yet
 // (matches the web app — see app/dashboard/settings/account/page.tsx's
 // "Subscription: Free (no billing connected)" row), so every number here
 // is honest mock data and every button is a real, tappable interaction

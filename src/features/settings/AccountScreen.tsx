@@ -13,10 +13,10 @@ import { avatarColorOptions, updateEditableProfile, useEditableProfile } from '@
 import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/lib/supabase';
 
-// Settings > App > Account. Supersedes the old bare avatar/bio-only
-// Settings screen (features/profile/SettingsScreen.tsx, still reachable
-// nowhere now that More's row points here) with the full field set the
-// spec asks for. Name writes to both the local profile store (so the
+// Settings > Account. Supersedes the old bare avatar/bio-only Settings
+// screen (features/profile/SettingsScreen.tsx, now deleted — nothing
+// pointed to it) with the full field set the spec asks for. Name writes
+// to both the local profile store (so the
 // Profile tab's identity card updates immediately) and the real
 // profiles.name column (so Home's greeting and the leaderboard — see
 // features/dashboard/remote.ts — stay in sync with it too); email is a

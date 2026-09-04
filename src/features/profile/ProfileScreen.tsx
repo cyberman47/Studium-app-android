@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BottomTabInset, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import { useRealDashboardStats } from '@/features/dashboard/remote';
 import { mockProgress } from '@/features/progress/data';
 
 import { IdentityCard } from './components/IdentityCard';
@@ -16,22 +18,26 @@ import { PassportCard } from './components/PassportCard';
 import { ProfileProgressCard } from './components/ProfileProgressCard';
 import { ProfileStatChips } from './components/ProfileStatChips';
 import { mockProfile } from './data';
-import { useEditableProfile } from './store';
+import { updateEditableProfile, useEditableProfile } from './store';
 
-// "How am I doing?" — Profile's new role per the desktop-aligned IA:
-// besides the identity the web app's Community "My Profile" page
+// "How am I doing?" — Profile's role per the desktop-aligned IA: besides
+// the identity the web app's Community "My Profile" page
 // (app/dashboard/(main)/community/profile/page.tsx) already showed here,
-// this is now also where Progress and Passport live (Progress lost its
-// own bottom tab; Passport was always reached from here) plus quick
-// links to Leaderboard, Friends (Invite Friends), Settings, Subscription,
-// and Account — everything the desktop TOOLS group's "Progress /
-// Passport" pairing implies a mobile command center needs one tap away.
-// The existing Recent Posts/Community Activity feed and the Forum/
-// Challenges/Study Groups/Contribute tile grid stay exactly as they
-// were — nothing here was removed, only added above it. The gear icon
-// still opens /more (Notifications, Help & Support, About, Log Out) —
-// unchanged, so nothing already reachable from Profile stops being
-// reachable.
+// this is also where Progress and Passport live (Progress lost its own
+// bottom tab; Passport was always reached from here) plus quick links to
+// Leaderboard, Friends (Invite Friends), and Settings — everything the
+// desktop TOOLS group's "Progress / Passport" pairing implies a mobile
+// command center needs one tap away. Subscription and Account used to
+// also sit here as their own direct rows, duplicating paths that already
+// exist one level into Settings — removed in favor of Settings being the
+// one real place to reach them, now that the gear icon and this row both
+// point at the same consolidated Settings hub (features/settings/
+// SettingsHubScreen.tsx), which itself absorbed the old /more screen
+// (Notifications, Invite Friends, Challenges, Help & Support, About, Log
+// Out) rather than leaving three different "settings-ish" entry points
+// with inconsistent contents. The existing Recent Posts/Community
+// Activity feed and the Forum/Challenges/Study Groups/Contribute tile
+// grid stay exactly as they were.
 // Community is a hub into four destinations, not a feed to scan — a 2x2
 // tile grid reads as "go somewhere" the way a settings-style list of
 // chevron rows doesn't.
@@ -76,8 +82,37 @@ function CommunityTile({
 export function ProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const data = mockProfile;
+  // Same real query Home's dashboard already runs (name, education_track,
+  // total_kp, current_streak, joinedLabel) — this tab used to show a
+  // hardcoded mock identity/stat block regardless of which account was
+  // signed in; now it shows the same real facts Home does. Only
+  // topicsMasteredCount/achievements/hasPosts/hasCommunityActivity stay
+  // mock below, since there's genuinely no Passport/Community backend yet.
+  const { loading, stats } = useRealDashboardStats();
   const editable = useEditableProfile();
+
+  // Seeds the editable-name store from the real fetched name the first
+  // time it resolves, so the identity card (which reads editable.name so
+  // an in-session AccountScreen edit reflects immediately) starts from
+  // the real value instead of staying blank/mock until a save happens.
+  useEffect(() => {
+    if (stats?.name) updateEditableProfile({ name: stats.name });
+  }, [stats?.name]);
+
+  const data = stats
+    ? {
+        ...mockProfile,
+        name: stats.name,
+        avatarInitial: stats.avatarInitial,
+        pathLabel: stats.pathLabel,
+        pathEmoji: stats.pathEmoji,
+        level: stats.level,
+        levelName: stats.levelName,
+        joinedLabel: stats.joinedLabel || mockProfile.joinedLabel,
+        totalKP: stats.totalKP,
+        streakDays: stats.streakDays,
+      }
+    : mockProfile;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -94,10 +129,10 @@ export function ProfileScreen() {
               </ThemedText>
             </View>
             <Pressable
-              onPress={() => router.push('/more')}
+              onPress={() => router.push('/settings')}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="More"
+              accessibilityLabel="Settings"
               style={({ pressed }) => [
                 styles.settingsButton,
                 { backgroundColor: theme.backgroundElement, borderColor: theme.border },
@@ -158,24 +193,8 @@ export function ProfileScreen() {
               iconColor={theme.primary}
               iconBackground={theme.primaryMuted}
               title="Settings"
-              subtitle="App, Reader, and Review preferences"
+              subtitle="Account, subscription, preferences, and support"
               onPress={() => router.push('/settings')}
-            />
-            <ListRow
-              icon="card-outline"
-              iconColor={theme.amber}
-              iconBackground={theme.amberMuted}
-              title="Subscription"
-              subtitle="Plan, billing, and renewal"
-              onPress={() => router.push('/settings-subscription')}
-            />
-            <ListRow
-              icon="person-circle-outline"
-              iconColor={theme.primary}
-              iconBackground={theme.primaryMuted}
-              title="Account"
-              subtitle="Name, email, password, and account details"
-              onPress={() => router.push('/settings-account')}
             />
           </GroupedList>
 

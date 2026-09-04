@@ -1,7 +1,5 @@
 import { useSyncExternalStore } from 'react';
 
-import { mockProfile } from './data';
-
 /**
  * The small slice of the profile that Settings can actually edit —
  * display name and avatar color (there's no camera/photo-library access
@@ -9,6 +7,16 @@ import { mockProfile } from './data';
  * initial-letter avatar, not a real photo upload). A plain module-level
  * store with useSyncExternalStore rather than Context, since only two
  * screens (Profile, Settings) ever need to read or write it.
+ *
+ * `name` starts empty rather than seeded from any mock value — it used to
+ * default to a hardcoded mock name, which meant Profile showed that same
+ * fake name for every real account until the student happened to visit
+ * Account and hit Save once. ProfileScreen now syncs this from the real
+ * profiles.name column (via features/dashboard/remote.ts's
+ * useRealDashboardStats) the moment that fetch resolves, and
+ * AccountScreen's own save flow keeps updating it from there on, same as
+ * before — this file only stops pretending to already know a name before
+ * either of those has actually happened.
  */
 
 export const avatarColorOptions = ['#0F8B8D', '#7C3AED', '#DB2777', '#D97706', '#0369A1', '#B91C1C'];
@@ -20,7 +28,7 @@ type EditableProfile = {
 };
 
 let state: EditableProfile = {
-  name: mockProfile.name,
+  name: '',
   bio: '',
   avatarColor: avatarColorOptions[0],
 };

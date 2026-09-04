@@ -17,11 +17,11 @@ import { useTheme } from '@/hooks/use-theme';
 const appearanceOptions: AppearanceMode[] = ['system', 'light', 'dark'];
 const appearanceLabels: Record<AppearanceMode, string> = { system: 'System', light: 'Light', dark: 'Dark' };
 
-// Settings > App > General. Appearance is the one real, working control
-// here — see features/settings/appearanceStore.ts — everything else on
-// this screen is honest local state. Notifications links to the existing
-// full Notifications screen (also reachable from More) rather than a
-// second copy of the same toggles living in two places at once.
+// Settings > Preferences > General. Appearance is the one real, working
+// control here — see features/settings/appearanceStore.ts — everything
+// else on this screen is honest local state. Notifications links to the
+// existing full Notifications screen rather than a second copy of the
+// same toggles living in two places at once.
 export function GeneralScreen() {
   const theme = useTheme();
   const router = useRouter();

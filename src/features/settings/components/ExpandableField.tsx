@@ -15,7 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 // current value as a one-line summary and expands in place — on tap — to
 // reveal the full picker (a PillGroup, a SelectableRow list, or custom
 // content like the Custom flashcard-count input). Used throughout
-// Settings > App/Reader/Review instead of leaving every option list
+// Settings > General/Reader/Review instead of leaving every option list
 // permanently visible, which was the complaint this replaces: screens
 // like Review's Question Types were "all on the screen" at once.
 export function ExpandableField({

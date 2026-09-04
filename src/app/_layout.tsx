@@ -39,12 +39,14 @@ function AuthGate() {
 }
 
 // A root Stack wrapping the (tabs) group (the 5-tab NativeTabs bar) so
-// screens that live outside the bottom nav — Settings, Passport, Forum,
-// Challenges, Study Groups, Contribute, More and its own children
-// (Notifications, Invite, Help, About), Studium AI chat, the note/flashcard
-// creation + My Content screens reached from Home's "+", and the Welcome/
-// Auth screens — have somewhere to push onto. NativeTabs alone (the
-// previous setup here) has no concept of a screen outside its own declared
+// screens that live outside the bottom nav — Settings (the one real
+// settings/account/support hub — see features/settings/
+// SettingsHubScreen.tsx, which absorbed the old separate /more and
+// /settings-app screens), Passport, Forum, Challenges, Study Groups,
+// Contribute, Notifications, Invite, Help, About, Studium AI chat, the
+// note/flashcard creation + My Content screens reached from Home's "+",
+// and the Welcome/Auth screens — have somewhere to push onto. NativeTabs
+// alone (the previous setup here) has no concept of a screen outside its own declared
 // triggers, so router.push('/settings') silently went nowhere before
 // this existed. Every pushed screen hides the native header and renders
 // its own ScreenHeader (src/components/screen-header.tsx) instead, for
@@ -58,7 +60,6 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" options={{ presentation: 'card' }} />
-        <Stack.Screen name="settings-app" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-account" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-general" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-subscription" options={{ presentation: 'card' }} />
@@ -66,11 +67,13 @@ export default function RootLayout() {
         <Stack.Screen name="settings-reader" options={{ presentation: 'card' }} />
         <Stack.Screen name="settings-review" options={{ presentation: 'card' }} />
         <Stack.Screen name="leaderboard" options={{ presentation: 'card' }} />
+        <Stack.Screen name="student/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="daily-case" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-word" options={{ presentation: 'card' }} />
         <Stack.Screen name="study-paths" options={{ presentation: 'card' }} />
         <Stack.Screen name="library" options={{ presentation: 'card' }} />
         <Stack.Screen name="progress" options={{ presentation: 'card' }} />
+        <Stack.Screen name="study-planner" options={{ presentation: 'card' }} />
         <Stack.Screen name="passport" options={{ presentation: 'card' }} />
         <Stack.Screen name="forum" options={{ presentation: 'card' }} />
         <Stack.Screen name="challenges" options={{ presentation: 'card' }} />
@@ -78,7 +81,6 @@ export default function RootLayout() {
         <Stack.Screen name="contribute" options={{ presentation: 'card' }} />
         <Stack.Screen name="track/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="libraryitem/[id]" options={{ presentation: 'card' }} />
-        <Stack.Screen name="more" options={{ presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
         <Stack.Screen name="invite" options={{ presentation: 'card' }} />
         <Stack.Screen name="help" options={{ presentation: 'card' }} />
