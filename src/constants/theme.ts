@@ -36,8 +36,11 @@ export const Colors = {
   dark: {
     text: '#FFFFFF',
     textSecondary: '#94A3B8', // slate-400
-    background: '#070D0C',
-    backgroundElement: '#0D1917',
+    // A visibly dark teal, not literal black — was #070D0C, whose R/G/B
+    // were close enough that it read as flat black on-device rather than
+    // carrying any of the brand's teal identity into dark mode.
+    background: '#0A1917',
+    backgroundElement: '#10221E',
     backgroundSelected: 'rgba(15, 139, 141, 0.15)',
     border: 'rgba(255, 255, 255, 0.10)',
 

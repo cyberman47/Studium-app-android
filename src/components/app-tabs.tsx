@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { useResolvedThemeName } from '@/hooks/use-theme';
 
 // 5 tabs matching the desktop web app's own STUDY/REVIEW/TOOLS grouping,
 // translated into a mobile-appropriate hierarchy: Home ("what should I
@@ -21,8 +21,12 @@ import { Colors } from '@/constants/theme';
 // app/_layout.tsx) reached from inside Learn/Profile instead. Nothing
 // about those three screens changed; only how you get to them did.
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  // The app's own resolved theme (respects the in-app Appearance setting
+  // — Settings > General > Appearance — not just the OS scheme). This
+  // used to read the raw OS useColorScheme() directly, which is why the
+  // tab bar stayed light even after switching the app itself to Dark
+  // while the device's own system setting was still Light.
+  const colors = Colors[useResolvedThemeName()];
 
   return (
     <NativeTabs
