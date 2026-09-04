@@ -44,7 +44,7 @@ type QuestionDef = {
 // at all, so both are handled separately below rather than forced into
 // this shape.
 const questions: QuestionDef[] = [
-  { key: 'studyingFor', heading: 'What are you studying for?', options: studyingForOptions, multiple: true },
+  { key: 'studyingFor', heading: 'What are you studying for?', options: studyingForOptions, multiple: false },
   { key: 'goal', heading: "What's your main goal?", options: goalOptions, multiple: false },
   { key: 'dailyStudyTime', heading: 'How much time can you study each day?', options: dailyStudyTimeOptions, multiple: false },
   { key: 'timeline', heading: 'When do you want to achieve your goal?', options: timelineOptions, multiple: false },
@@ -115,7 +115,7 @@ export function OnboardingScreen() {
     setTimeout(() => go(step + 1, 1), 280);
   }
 
-  function toggleMulti(key: 'studyingFor' | 'learningStyle', value: string) {
+  function toggleMulti(key: 'learningStyle', value: string) {
     setAnswers((a) => {
       const current = a[key];
       return { ...a, [key]: current.includes(value) ? current.filter((v) => v !== value) : [...current, value] };
@@ -189,7 +189,7 @@ export function OnboardingScreen() {
                   multiple={currentQuestion.multiple}
                   selected={currentQuestion.multiple ? (answers[currentQuestion.key] as string[]) : (answers[currentQuestion.key] as string | null)}
                   onSelectSingle={(value) => selectSingle(currentQuestion.key, value)}
-                  onToggleMulti={(value) => toggleMulti(currentQuestion.key as 'studyingFor' | 'learningStyle', value)}
+                  onToggleMulti={(value) => toggleMulti(currentQuestion.key as 'learningStyle', value)}
                   onContinue={() => go(step + 1, 1)}
                 />
               )}

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 
 export type OnboardingAnswers = {
   name: string;
-  studyingFor: string[];
+  studyingFor: string | null;
   goal: string | null;
   dailyStudyTime: string | null;
   timeline: string | null;
@@ -15,7 +15,7 @@ export type OnboardingAnswers = {
 
 export const emptyAnswers: OnboardingAnswers = {
   name: '',
-  studyingFor: [],
+  studyingFor: null,
   goal: null,
   dailyStudyTime: null,
   timeline: null,
