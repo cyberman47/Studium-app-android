@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,54 +17,62 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
+import { useAuthState } from '@/features/auth/store';
 import { useTheme } from '@/hooks/use-theme';
+import { educationTrackLabel } from '@/lib/educationTrack';
+import { supabase } from '@/lib/supabase';
+import { streamTutorReply, type TutorContext } from '@/lib/tutorChat';
 
 import { recentLessons } from './data';
-import {
-  type ChatMessage,
-  type ResponseStyle,
-  getSession,
-  upsertSession,
-  useAISettings,
-  useChatSettings,
-} from './store';
-
-// Keyword-matched canned replies rather than a real model call — there's no
-// AI backend wired into the mobile app yet (the web app's is real and
-// rate-limited; this is a local placeholder with the same honesty as the
-// rest of this app's mock data). responseStyle and lessonTitle both come
-// from real state (AI Settings, the lesson picker) so this genuinely
-// reacts to them, even though the underlying reply text is scripted.
-function craftReply(input: string, lessonTitle: string | undefined, style: ResponseStyle): string {
-  const text = input.toLowerCase();
-  let base: string;
-  if (text.includes('streak')) {
-    base =
-      'Your streak stays alive as long as you hit your daily Knowledge Point goal. Check the progress bar on Home to see how close you are today.';
-  } else if (text.includes('quiz') || text.includes('test me')) {
-    base =
-      "Here's one: a patient presents with sudden breathlessness postpartum. What's the first diagnosis you should rule out? Think about Virchow's triad.";
-  } else if (text.includes('membrane') || text.includes('transport')) {
-    base =
-      'Cell membrane transport splits into passive (diffusion, facilitated diffusion, osmosis — no energy needed) and active (primary, secondary — needs ATP). What part is tripping you up?';
-  } else if (text.includes('mcat')) {
-    base =
-      'For the MCAT, focus on connecting mechanisms across sections. The same enzyme kinetics you see in Biochem shows up again in Bio passages. Want me to suggest a review order?';
-  } else {
-    base =
-      "Good question. I'd break that down by first identifying what you already know, then filling the gap. Try rephrasing it around the specific concept you're unsure of, and I'll walk through it with you.";
-  }
-
-  if (style === 'concise') {
-    const cut = base.indexOf('. ');
-    base = cut === -1 ? base : base.slice(0, cut + 1);
-  }
-  return lessonTitle ? `Since you're working on ${lessonTitle}: ${base}` : base;
-}
+import { type ChatMessage, getSession, upsertSession, useAISettings, useChatSettings } from './store';
 
 function newId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
+
+// Shown in place of the assistant bubble's text while waiting on the
+// first real chunk from /api/tutor — a thin indeterminate bar (a sweeping
+// highlight, looping) rather than static "…" text, so a slow reply still
+// visibly reads as "working," not stalled. Once real text starts
+// streaming in this unmounts and the bubble shows that text instead.
+function TypingBar({ color, trackColor }: { color: string; trackColor: string }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 1100,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [progress]);
+
+  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [-56, 56] });
+
+  return (
+    <View style={[typingBarStyles.track, { backgroundColor: trackColor }]}>
+      <Animated.View style={[typingBarStyles.fill, { backgroundColor: color, transform: [{ translateX }] }]} />
+    </View>
+  );
+}
+
+const typingBarStyles = StyleSheet.create({
+  track: {
+    width: 56,
+    height: 5,
+    borderRadius: Radius.pill,
+    overflow: 'hidden',
+  },
+  fill: {
+    width: 28,
+    height: '100%',
+    borderRadius: Radius.pill,
+  },
+});
 
 function deriveTitle(messages: ChatMessage[], lessonTitle: string | undefined): string {
   if (lessonTitle) return lessonTitle;
@@ -94,6 +104,29 @@ export function AIChatScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const sessionIdRef = useRef(sessionParam ?? newId('session'));
 
+  // Real "Currently Studying" track, same profiles.education_track column
+  // the dashboard reads — sent as TutorContext.currentTrack so the model
+  // frames answers for this student's actual field, same as the website's
+  // in-lesson tutor panel. Left undefined until this resolves; the server
+  // treats a missing track as "not specified" rather than erroring.
+  const { userId } = useAuthState();
+  const [trackLabel, setTrackLabel] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    supabase
+      .from('profiles')
+      .select('education_track')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setTrackLabel(educationTrackLabel(data?.education_track));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
   // Loading an existing conversation from Chat History — swaps in its
   // saved messages and lesson instead of starting fresh.
   useEffect(() => {
@@ -106,38 +139,76 @@ export function AIChatScreen() {
     }
   }, [sessionParam]);
 
-  function send() {
+  function patchMessage(id: string, patch: Partial<ChatMessage>) {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+  }
+
+  // Real streamed reply from /api/tutor (src/lib/tutorChat.ts) — the same
+  // Gemini-backed endpoint and request contract studium-website's own AI
+  // Tutor uses. No mode picker exists in this screen yet, so the AI
+  // Settings "Response style" toggle (concise/detailed) maps onto the
+  // server's tutor mode instead of being thrown away: concise asks for the
+  // short-analogy "simplify" mode, detailed uses the standard "tutor" mode.
+  async function send() {
     const trimmed = draft.trim();
-    if (!trimmed) return;
+    if (!trimmed || isTyping) return;
 
     const userMessage: ChatMessage = { id: newId('u'), role: 'user', text: trimmed };
-    const withUser = [...messages, userMessage];
-    setMessages(withUser);
+    const assistantMessage: ChatMessage = { id: newId('a'), role: 'assistant', text: '', streaming: true };
+    const priorMessages = messages;
+    const withPlaceholder = [...priorMessages, userMessage, assistantMessage];
+    setMessages(withPlaceholder);
     setDraft('');
     setIsTyping(true);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
 
-    setTimeout(() => {
-      const reply: ChatMessage = {
-        id: newId('a'),
-        role: 'assistant',
-        text: craftReply(trimmed, selectedLesson, aiSettings.responseStyle),
-      };
-      const withReply = [...withUser, reply];
-      setMessages(withReply);
-      setIsTyping(false);
-      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    const lessonMeta = selectedLesson ? recentLessons.find((l) => l.title === selectedLesson) : undefined;
+    const context: TutorContext = {
+      sectionName: '',
+      subjectName: lessonMeta?.subject ?? '',
+      lessonTitle: selectedLesson ?? '',
+      lessonId: lessonMeta?.id ?? '',
+      currentStep: '',
+      currentFlashcard: null,
+      currentPracticeQuestion: null,
+      recentMistakes: [],
+      studentLevel: '',
+      currentTrack: trackLabel,
+      currentOnScreenText: null,
+    };
+    const history = priorMessages.filter((m) => !m.error).map((m) => ({ role: m.role, text: m.text }));
+    const mode = aiSettings.responseStyle === 'concise' ? 'simplify' : 'tutor';
 
-      if (chatSettings.saveHistory) {
-        upsertSession({
-          id: sessionIdRef.current,
-          title: deriveTitle(withReply, selectedLesson),
-          lessonTitle: selectedLesson,
-          messages: withReply,
-          updatedAt: Date.now(),
-        });
-      }
-    }, 700);
+    let latestText = '';
+    const result = await streamTutorReply({
+      message: trimmed,
+      mode,
+      context,
+      history,
+      onChunk: (textSoFar) => {
+        latestText = textSoFar;
+        patchMessage(assistantMessage.id, { text: textSoFar });
+        requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+      },
+    });
+
+    const finalAssistant: ChatMessage = result.ok
+      ? { ...assistantMessage, text: latestText, streaming: false }
+      : { ...assistantMessage, text: result.error, streaming: false, error: true };
+    patchMessage(assistantMessage.id, finalAssistant);
+    setIsTyping(false);
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+
+    if (chatSettings.saveHistory) {
+      const finalMessages = [...priorMessages, userMessage, finalAssistant];
+      upsertSession({
+        id: sessionIdRef.current,
+        title: deriveTitle(finalMessages, selectedLesson),
+        lessonTitle: selectedLesson,
+        messages: finalMessages,
+        updatedAt: Date.now(),
+      });
+    }
   }
 
   return (
@@ -197,42 +268,45 @@ export function AIChatScreen() {
             contentContainerStyle={styles.messages}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}>
-            {messages.map((message) => (
-              <View key={message.id} style={[styles.bubbleRow, message.role === 'user' && styles.bubbleRowUser]}>
-                {message.role === 'assistant' && (
-                  <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
-                    <Ionicons name="sparkles" size={14} color={theme.primary} />
-                  </View>
-                )}
-                <View style={[styles.bubbleShadow, Shadow.card]}>
-                  <View
-                    style={[
-                      styles.bubble,
-                      message.role === 'user'
-                        ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                        : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                    ]}>
-                    <ThemedText style={[styles.bubbleText, message.role === 'user' && { color: '#FFFFFF' }]}>
-                      {message.text}
-                    </ThemedText>
+            {messages.map((message) => {
+              // Still waiting on the first chunk — no text yet to show, so
+              // render the same "…" placeholder the old canned-reply delay
+              // used, rather than an empty bubble. Once real text starts
+              // streaming in, this flips to showing it live.
+              const isPending = message.role === 'assistant' && message.streaming && message.text === '';
+              return (
+                <View key={message.id} style={[styles.bubbleRow, message.role === 'user' && styles.bubbleRowUser]}>
+                  {message.role === 'assistant' && (
+                    <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
+                      <Ionicons name="sparkles" size={14} color={theme.primary} />
+                    </View>
+                  )}
+                  <View style={[styles.bubbleShadow, Shadow.card]}>
+                    <View
+                      style={[
+                        styles.bubble,
+                        message.role === 'user'
+                          ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                          : message.error
+                            ? { backgroundColor: theme.roseMuted, borderColor: theme.rose }
+                            : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                      ]}>
+                      {isPending ? (
+                        <View style={styles.typingBarWrap}>
+                          <TypingBar color={theme.primary} trackColor={theme.backgroundSelected} />
+                        </View>
+                      ) : (
+                        <ThemedText
+                          themeColor={message.error ? 'rose' : undefined}
+                          style={[styles.bubbleText, message.role === 'user' && { color: '#FFFFFF' }]}>
+                          {message.text}
+                        </ThemedText>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
-            {isTyping && (
-              <View style={styles.bubbleRow}>
-                <View style={[styles.avatar, { backgroundColor: theme.primaryMuted }]}>
-                  <Ionicons name="sparkles" size={14} color={theme.primary} />
-                </View>
-                <View style={[styles.bubbleShadow, Shadow.card]}>
-                  <View style={[styles.bubble, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                    <ThemedText themeColor="textSecondary" style={styles.bubbleText}>
-                      …
-                    </ThemedText>
-                  </View>
-                </View>
-              </View>
-            )}
+              );
+            })}
           </ScrollView>
         )}
 
@@ -282,13 +356,13 @@ export function AIChatScreen() {
           />
           <Pressable
             onPress={send}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || isTyping}
             accessibilityRole="button"
             accessibilityLabel="Send message"
             style={({ pressed }) => [
               styles.sendButton,
-              { backgroundColor: draft.trim() ? theme.primary : theme.border },
-              pressed && draft.trim() && styles.sendButtonPressed,
+              { backgroundColor: draft.trim() && !isTyping ? theme.primary : theme.border },
+              pressed && draft.trim() && !isTyping && styles.sendButtonPressed,
             ]}>
             <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
           </Pressable>
@@ -472,6 +546,10 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  typingBarWrap: {
+    paddingVertical: 4,
+    justifyContent: 'center',
   },
   lessonBarWrap: {
     width: '100%',

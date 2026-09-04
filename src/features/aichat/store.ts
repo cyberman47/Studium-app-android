@@ -14,6 +14,14 @@ export type ChatMessage = {
   id: string;
   role: 'assistant' | 'user';
   text: string;
+  // True while a reply is still streaming in from the real /api/tutor
+  // call — lets the bubble show a live typing indicator (empty text) or
+  // growing text instead of popping in atomically.
+  streaming?: boolean;
+  // True if `text` is a genuine failure notice (network/rate-limit/server
+  // error), not a model reply — kept visually distinct so it's never
+  // mistaken for real tutoring content.
+  error?: boolean;
 };
 
 export type ChatSession = {
