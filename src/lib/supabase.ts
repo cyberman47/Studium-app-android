@@ -17,8 +17,16 @@ import { createClient } from '@supabase/supabase-js';
  *
  * AsyncStorage is the session-persistence adapter (RN has no localStorage);
  * without it a session wouldn't survive an app restart. detectSessionInUrl
- * is off because that's a web-only OAuth-redirect concern this app doesn't
- * have yet.
+ * is off because that's a web-only concern (parsing tokens out of the
+ * *browser's own* location bar) — this app's OAuth redirect instead comes
+ * back through a deep link (studiummobile://auth-callback), handled
+ * manually in features/auth/store.ts's signInWithGoogle.
+ *
+ * flowType: 'pkce' — Supabase's own recommended flow for native apps.
+ * Google's authorization step returns a single-use `code` in the redirect
+ * URL instead of raw access/refresh tokens sitting in it, which
+ * exchangeCodeForSession then swaps for a real session — safer than the
+ * implicit flow's tokens-in-a-URL for a mobile deep link.
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -35,5 +43,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });

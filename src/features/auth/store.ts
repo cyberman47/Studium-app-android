@@ -1,3 +1,5 @@
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { useSyncExternalStore } from 'react';
 
 import { supabase } from '@/lib/supabase';
@@ -85,14 +87,63 @@ export function useIsLoggedIn(): boolean {
   return useAuthState().status === 'authenticated';
 }
 
-export async function signUp(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+// username is passed as auth metadata, not written to `profiles` directly
+// — the same handle_new_user trigger that already backfills a name/avatar
+// from OAuth metadata (supabase/migrations/0001_profiles.sql in
+// studium-website) reads raw_user_meta_data->>'username' for this exact
+// field, falling back to the email's own local-part if it's ever omitted
+// (e.g. a Google sign-up, which has no username field to fill in).
+export async function signUp(email: string, password: string, username: string) {
+  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username } } });
   if (error) throw error;
   // No session means Supabase created the account but is waiting on an
   // email confirmation click before issuing one — same real project
   // setting the web app's signup flow already handles (see
   // app/signup/page.tsx's awaitingConfirmation state there).
   return { awaitingConfirmation: !data.session };
+}
+
+// Real Google OAuth, not a placeholder button — same Supabase project as
+// studium-website, whose own Google sign-in is built but still paused on
+// whitelisting its redirect URL there (see that repo's own notes). This
+// will surface that identical "not configured yet" error honestly if
+// Google isn't enabled for this project rather than pretending to work.
+//
+// Supabase's browser client normally finishes an OAuth redirect itself by
+// reading tokens straight out of the page's own URL (detectSessionInUrl) —
+// there's no such URL here, only a deep link the OS hands back to the app,
+// so this does that step by hand: open the provider's consent screen in an
+// in-app browser tab (WebBrowser.openAuthSessionAsync, not the OS
+// browser — required for the redirect back to actually reach this app),
+// wait for it to redirect to this app's own studiummobile:// scheme, then
+// exchange the `code` that redirect carries for a real session
+// (exchangeCodeForSession — the PKCE flow lib/supabase.ts's client is
+// configured for). Once that call succeeds, supabase.auth.onAuthStateChange
+// (subscribed once, above) picks up the new session on its own — same
+// listener signIn/signUp already rely on — so there's nothing further to
+// do here to actually log the student in.
+export async function signInWithGoogle() {
+  const redirectTo = Linking.createURL('auth-callback');
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error) throw error;
+  if (!data.url) throw new Error('Could not start Google sign-in.');
+
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  if (result.type !== 'success' || !result.url) {
+    throw new Error('Google sign-in was cancelled.');
+  }
+
+  const { queryParams } = Linking.parse(result.url);
+  const code = typeof queryParams?.code === 'string' ? queryParams.code : null;
+  const oauthError = typeof queryParams?.error_description === 'string' ? queryParams.error_description : null;
+  if (oauthError) throw new Error(oauthError);
+  if (!code) throw new Error('Google sign-in did not return an authorization code.');
+
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  if (exchangeError) throw exchangeError;
 }
 
 export async function signIn(email: string, password: string) {

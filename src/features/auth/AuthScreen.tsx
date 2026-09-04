@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,8 +10,21 @@ import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { WEBSITE_URL } from '@/lib/config';
 
-import { fetchOnboardingComplete, signIn, signUp } from './store';
+import { fetchOnboardingComplete, signIn, signInWithGoogle, signUp } from './store';
+
+// Real, deployed pages — the same Terms/Privacy the web app's own signup
+// form links to (app/signup/page.tsx), opened in an in-app browser tab
+// rather than a native Link since there's no in-app route for them here.
+
+// Real, enforced requirement (checked live, not just on submit) so a
+// student sees why the field is invalid before they hit Create account —
+// same "surface it as you type" treatment the web signup form gives its
+// password checklist. Letters, numbers, and underscores only: keeps a
+// username safe to show elsewhere in the app (leaderboard, forum,
+// community posts) without needing to sanitize it again at render time.
+const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
 
 type Mode = 'signup' | 'login';
 
@@ -35,11 +50,17 @@ export function AuthScreen() {
   const router = useRouter();
   const { mode: initialMode } = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<Mode>(initialMode === 'login' ? 'login' : 'signup');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Separate from `submitting` — Google's flow leaves this screen entirely
+  // (the in-app browser tab) and comes back, so it needs its own loading
+  // state rather than sharing the email/password form's.
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   // True once Supabase has actually sent a confirmation email and is
   // waiting on a click before issuing a session — real project setting
   // (this Supabase project requires email confirmation by default), not a
@@ -52,19 +73,28 @@ export function AuthScreen() {
 
   async function submit() {
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setError('Email and password are required.');
+    const trimmedUsername = username.trim();
+    if (!trimmedEmail || !password || (isSignup && !trimmedUsername)) {
+      setError(isSignup ? 'Username, email, and password are required.' : 'Email and password are required.');
+      return;
+    }
+    if (isSignup && !USERNAME_PATTERN.test(trimmedUsername)) {
+      setError('Username must be 3–20 characters — letters, numbers, and underscores only.');
       return;
     }
     if (isSignup && password.length < 8) {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (isSignup && !agreed) {
+      setError('Please agree to the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
       if (isSignup) {
-        const { awaitingConfirmation: needsConfirmation } = await signUp(trimmedEmail, password);
+        const { awaitingConfirmation: needsConfirmation } = await signUp(trimmedEmail, password, trimmedUsername);
         if (needsConfirmation) {
           setAwaitingConfirmation(true);
           return;
@@ -82,6 +112,25 @@ export function AuthScreen() {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // Doesn't navigate itself on success — signInWithGoogle's own doc comment
+  // covers why: the auth-state listener every sign-in path already shares
+  // (features/auth/store.ts) picks up the new session and the launch gate
+  // (app/_layout.tsx's AuthGate) carries it from there, same as it would
+  // for a page reload mid-session. This only needs to handle its own
+  // loading state and surface a real failure (cancellation, or Google not
+  // enabled for this project yet) if one happens.
+  async function handleGoogleSignIn() {
+    setError('');
+    setGoogleSubmitting(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setGoogleSubmitting(false);
     }
   }
 
@@ -117,9 +166,13 @@ export function AuthScreen() {
             <ScreenHeader title={isSignup ? 'Sign Up' : 'Log In'} />
 
             <View style={styles.header}>
-              <View style={[styles.iconCircle, { backgroundColor: theme.primaryMuted }]}>
-                <Ionicons name={isSignup ? 'sparkles' : 'log-in-outline'} size={26} color={theme.primary} />
-              </View>
+              <Image
+                source={require('@/assets/images/studium-logo-full.png')}
+                style={styles.logo}
+                contentFit="contain"
+                accessible
+                accessibilityLabel="Studium"
+              />
               <ThemedText style={styles.title}>{isSignup ? 'Create your Studium account' : 'Welcome back'}</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.subtitle}>
                 {isSignup ? 'Your personalized medical learning journey starts here.' : 'Log in to pick up right where you left off.'}
@@ -128,6 +181,24 @@ export function AuthScreen() {
 
             <View style={[styles.cardShadow, Shadow.card]}>
               <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                {isSignup && (
+                  <View style={styles.field}>
+                    <ThemedText themeColor="textSecondary" style={styles.label}>
+                      Username
+                    </ThemedText>
+                    <TextInput
+                      value={username}
+                      onChangeText={setUsername}
+                      placeholder="Pick a username"
+                      placeholderTextColor={theme.textSecondary}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoComplete="username-new"
+                      style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+                    />
+                  </View>
+                )}
+
                 <View style={styles.field}>
                   <ThemedText themeColor="textSecondary" style={styles.label}>
                     Email
@@ -170,6 +241,40 @@ export function AuthScreen() {
                   </View>
                 </View>
 
+                {isSignup && (
+                  <Pressable
+                    onPress={() => setAgreed(a => !a)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: agreed }}
+                    accessibilityLabel="Agree to the Terms of Service and Privacy Policy"
+                    style={styles.termsRow}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        { borderColor: agreed ? theme.accent : theme.border },
+                        agreed && { backgroundColor: theme.accent },
+                      ]}>
+                      {agreed && <Ionicons name="checkmark" size={13} color={theme.white} />}
+                    </View>
+                    <ThemedText themeColor="textSecondary" style={styles.termsText}>
+                      I agree to the{' '}
+                      <ThemedText
+                        themeColor="primary"
+                        style={styles.termsLink}
+                        onPress={() => openBrowserAsync(`${WEBSITE_URL}/terms`, { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC })}>
+                        Terms of Service
+                      </ThemedText>{' '}
+                      and{' '}
+                      <ThemedText
+                        themeColor="primary"
+                        style={styles.termsLink}
+                        onPress={() => openBrowserAsync(`${WEBSITE_URL}/privacy`, { presentationStyle: WebBrowserPresentationStyle.AUTOMATIC })}>
+                        Privacy Policy
+                      </ThemedText>
+                    </ThemedText>
+                  </Pressable>
+                )}
+
                 {error && <ThemedText themeColor="rose" style={styles.error}>{error}</ThemedText>}
 
                 <Pressable
@@ -189,6 +294,35 @@ export function AuthScreen() {
                 </Pressable>
               </View>
             </View>
+
+            {isSignup && (
+              <>
+                <View style={styles.dividerRow}>
+                  <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+                  <ThemedText themeColor="textSecondary" style={styles.dividerText}>
+                    or
+                  </ThemedText>
+                  <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+                </View>
+
+                <Pressable
+                  onPress={handleGoogleSignIn}
+                  disabled={googleSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign up with Google"
+                  style={({ pressed }) => [
+                    styles.googleButton,
+                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    pressed && !googleSubmitting && styles.submitButtonPressed,
+                    googleSubmitting && styles.submitButtonDisabled,
+                  ]}>
+                  <Ionicons name="logo-google" size={18} color={theme.text} />
+                  <ThemedText style={styles.googleButtonText}>
+                    {googleSubmitting ? 'Opening Google…' : 'Sign up with Google'}
+                  </ThemedText>
+                </Pressable>
+              </>
+            )}
 
             <Pressable
               onPress={() => {
@@ -232,6 +366,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: 6,
+  },
+  logo: {
+    height: 32,
+    aspectRatio: 779 / 303,
+    marginBottom: Spacing.one,
   },
   iconCircle: {
     width: 60,
@@ -322,5 +461,60 @@ const styles = StyleSheet.create({
   switchModeLink: {
     fontSize: 13,
     fontWeight: '800',
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+  termsLink: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontWeight: '800',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  googleButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 14,
+    minHeight: 48,
+  },
+  googleButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
