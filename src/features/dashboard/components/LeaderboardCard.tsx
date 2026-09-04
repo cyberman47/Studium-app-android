@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -13,12 +14,24 @@ const medalEmoji = ['🥇', '🥈', '🥉'];
 
 function Row({ row, rank }: { row: LeaderboardRow; rank: number }) {
   const theme = useTheme();
+  const router = useRouter();
   const medalColor = rank <= 3 ? rankColors[rank - 1] : undefined;
-  const label = `Rank ${rank}, ${row.name}, ${row.totalKP} knowledge points, ${row.streak} day streak${row.isYou ? ', this is you' : ''}`;
+  const label = `Rank ${rank}, ${row.name}, ${row.totalKP} knowledge points, ${row.streak} day streak${row.isYou ? ', this is you' : ''}. View profile.`;
 
   return (
-    <View
-      style={[styles.row, row.isYou && { backgroundColor: theme.primaryMuted }]}
+    <Pressable
+      onPress={() =>
+        router.push({
+          pathname: '/student/[id]',
+          params: { id: row.id, name: row.name, totalKP: String(row.totalKP), streak: String(row.streak), rank: String(rank), isYou: row.isYou ? '1' : '0' },
+        })
+      }
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.row,
+        row.isYou && { backgroundColor: theme.primaryMuted },
+        pressed && !row.isYou && { backgroundColor: theme.backgroundSelected },
+      ]}
       accessibilityLabel={label}>
       <View
         style={[
@@ -54,14 +67,18 @@ function Row({ row, rank }: { row: LeaderboardRow; rank: number }) {
       <ThemedText themeColor="textSecondary" style={styles.kp}>
         {row.totalKP.toLocaleString()} KP
       </ThemedText>
-    </View>
+      <Ionicons name="chevron-forward" size={14} color={theme.textSecondary} />
+    </Pressable>
   );
 }
 
 // Not rendered on Home anymore — it now shows a single row inside
 // HomeListSection's grouped list. Kept here (both the `minimal` glance
 // and the full row list) as the fuller destination a leaderboard row's
-// chevron should eventually route to.
+// chevron routes to (features/leaderboard/LeaderboardScreen.tsx). Each
+// full row is itself tappable now too, opening that student's real
+// profile (features/leaderboard/StudentProfileScreen.tsx) — see Row's
+// onPress below.
 export function LeaderboardCard({ rows, minimal = false }: { rows: LeaderboardRow[]; minimal?: boolean }) {
   const theme = useTheme();
 
