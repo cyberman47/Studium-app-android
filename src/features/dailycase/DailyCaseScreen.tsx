@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+import type { ClinicalCase } from './data';
 import { getCaseOfTheDay, getCaseRewardKP, getCaseRewardLabel, getCaseRewardTier } from './logic';
 import { submitCaseDiagnosis, useTodayCaseAttempt } from './store';
 
@@ -40,6 +41,51 @@ export function DailyCaseScreen() {
   const theme = useTheme();
   const router = useRouter();
   const todaysCase = useMemo(() => getCaseOfTheDay(), []);
+
+  // Medical Cases content was removed (clinicalCases.ts is intentionally
+  // empty, pending a real Supabase-backed source — see logic.ts), so
+  // getCaseOfTheDay genuinely has nothing to hand back some days. An
+  // honest blank state instead of the case UI, rather than crashing on
+  // a null case's fields.
+  if (!todaysCase) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={styles.inner}>
+          <View style={styles.headerRow}>
+            <Pressable onPress={() => router.back()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back">
+              <Ionicons name="chevron-back" size={22} color={theme.text} />
+            </Pressable>
+            <View style={styles.headerSpacer} />
+          </View>
+          <View style={styles.emptyState}>
+            <View style={[styles.emptyIcon, { backgroundColor: theme.backgroundSelected }]}>
+              <Ionicons name="pulse-outline" size={22} color={theme.textSecondary} />
+            </View>
+            <ThemedText style={styles.emptyTitle}>No case available right now</ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+              Check back soon — new cases are on the way.
+            </ThemedText>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return <DailyCaseContent todaysCase={todaysCase} router={router} theme={theme} />;
+}
+
+// Split out so the hooks below (useState, derived values) only ever run
+// against a real, non-null case — the early return above already handled
+// "no case today", so this component's props guarantee one exists.
+function DailyCaseContent({
+  todaysCase,
+  router,
+  theme,
+}: {
+  todaysCase: ClinicalCase;
+  router: ReturnType<typeof useRouter>;
+  theme: ReturnType<typeof useTheme>;
+}) {
   const totalBeats = todaysCase.narrative.length;
 
   const attempt = useTodayCaseAttempt();
@@ -349,6 +395,10 @@ const styles = StyleSheet.create({
   inner: { width: '100%', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.four, paddingTop: Spacing.three, gap: 14 },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerSpacer: { flex: 1 },
+  emptyState: { alignItems: 'center', paddingTop: 100, gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { fontSize: 15, fontWeight: '800' },
+  emptyText: { fontSize: 13, textAlign: 'center' },
   eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
   eyebrowText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
   title: { fontSize: 22, fontWeight: '800', lineHeight: 28, letterSpacing: -0.3 },

@@ -6,12 +6,14 @@ import { GroupedList } from '@/components/grouped-list';
 import { ListRow } from '@/components/list-row';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
+import { PathId, pathOptions } from '@/constants/paths';
 import { Spacing } from '@/constants/theme';
 import { AppearanceMode, setAppearanceMode, useAppearanceMode } from '@/features/settings/appearanceStore';
 import { ExpandableField } from '@/features/settings/components/ExpandableField';
 import { PillGroup } from '@/features/settings/components/PillGroup';
 import { SavedIndicator, useSavedFeedback } from '@/features/settings/components/SavedIndicator';
 import { languageOptions, setLanguage, useLanguage } from '@/features/settings/generalStore';
+import { setCurrentPathId, useCurrentPathId } from '@/features/study/currentPathStore';
 import { useTheme } from '@/hooks/use-theme';
 
 const appearanceOptions: AppearanceMode[] = ['system', 'light', 'dark'];
@@ -27,7 +29,9 @@ export function GeneralScreen() {
   const router = useRouter();
   const appearance = useAppearanceMode();
   const language = useLanguage();
+  const currentPathId = useCurrentPathId();
   const { visible, trigger } = useSavedFeedback();
+  const currentPathOption = pathOptions.find((p) => p.id === currentPathId) ?? pathOptions[0];
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -70,6 +74,37 @@ export function GeneralScreen() {
                 getLabel={(v) => appearanceLabels[v as AppearanceMode]}
                 onSelect={(value) => {
                   setAppearanceMode(value as AppearanceMode);
+                  trigger();
+                }}
+              />
+            </ExpandableField>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
+                STUDY PATH
+              </ThemedText>
+            </View>
+            {/* Deliberately collapsed by default and buried here rather than
+                a one-tap badge on Home/Learn (see components/current-path-
+                badge.tsx) — switching what you're studying for (MCAT vs
+                Nursing vs ...) changes what shows up across Courses/Learn,
+                so it shouldn't be something you bump into by accident. */}
+            <ExpandableField title="Study Path" summary={currentPathOption.label} summaryColor={currentPathOption.color}>
+              <PillGroup
+                options={pathOptions.map((p) => p.id)}
+                selected={currentPathId}
+                getLabel={(id) => {
+                  const option = pathOptions.find((p) => p.id === id);
+                  return option ? option.label : String(id);
+                }}
+                getColor={(id) => {
+                  const option = pathOptions.find((p) => p.id === id);
+                  return { color: option?.color ?? theme.primary, colorMuted: option?.colorMuted ?? theme.primaryMuted };
+                }}
+                onSelect={(id) => {
+                  setCurrentPathId(id as PathId);
                   trigger();
                 }}
               />

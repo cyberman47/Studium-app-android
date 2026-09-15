@@ -1,7 +1,8 @@
 import type { Ionicons } from '@expo/vector-icons';
 
-// 'lessons' is deliberately excluded — it's handled by AllLessonsScreen /
-// curriculum.ts's own richer data model, not this generic row list.
+// 'lessons' is deliberately excluded — it's handled by the real,
+// Supabase-backed LessonListScreen (features/practice/LessonListScreen.tsx),
+// not this generic static row list.
 export type LibraryItemId =
   | 'saved'
   | 'recent'

@@ -18,7 +18,7 @@ function makeCard(): Draft {
 }
 
 // Reached from Home's "+" import button. Real, working save into the
-// shared mycontent store — same pattern as NewNoteScreen.
+// shared mycontent store.
 export function NewFlashcardScreen() {
   const theme = useTheme();
   const router = useRouter();

@@ -2,9 +2,21 @@ import { clinicalCases, type ClinicalCase } from './data';
 
 // Same deterministic day-index rotation as the web app's getCaseOfTheDay
 // (lib/clinicalCases.ts) — every device landing on this screen on the
-// same calendar day sees the same case, with no server round-trip
-// needed. No admin-override layer here (mobile has no admin surface).
-export function getCaseOfTheDay(date: Date = new Date()): ClinicalCase {
+// same calendar day would see the same case, with no server round-trip
+// needed. Returns null now that clinicalCases.ts is intentionally empty
+// (see that file) — every caller (DailyCaseCard, DailyCaseScreen) is
+// expected to handle that as "no case today" rather than assuming one
+// always exists.
+//
+// This is the one place a future Supabase-backed rewrite plugs in: swap
+// this for a real query against a `clinical_cases` table (none exists
+// yet — see the repo's supabase/migrations, which only cover profiles/
+// social/leaderboard/planner data, nothing content-shaped) keyed by
+// today's date or the same deterministic rotation, and the two screens
+// below don't need to change at all since they already treat "no case"
+// as a normal, handled state rather than an error.
+export function getCaseOfTheDay(date: Date = new Date()): ClinicalCase | null {
+  if (clinicalCases.length === 0) return null;
   const dayIndex = Math.floor(date.getTime() / 86400000);
   const index = ((dayIndex % clinicalCases.length) + clinicalCases.length) % clinicalCases.length;
   return clinicalCases[index];

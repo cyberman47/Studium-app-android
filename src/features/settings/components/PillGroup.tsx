@@ -7,23 +7,30 @@ import { useTheme } from '@/hooks/use-theme';
 // Wrapped, compact chip selector for short option sets (text size,
 // spacing, reading width, appearance, speed presets, ...) — the Studium
 // teal selected state (#0F8B8D via theme.primary) applies the same way
-// everywhere it's used.
+// everywhere it's used, unless a `getColor` is given (e.g. Study Path,
+// where each option has its own identity color instead of one shared
+// selection tint).
 export function PillGroup({
   options,
   selected,
   onSelect,
   getLabel = (o) => String(o),
+  getColor,
 }: {
   options: string[] | number[];
   selected: string | number;
   onSelect: (value: string) => void;
   getLabel?: (value: string | number) => string;
+  getColor?: (value: string | number) => { color: string; colorMuted: string };
 }) {
   const theme = useTheme();
   return (
     <View style={styles.wrap}>
       {options.map((opt) => {
         const isSelected = opt === selected;
+        const tone = getColor?.(opt);
+        const activeColor = tone?.color ?? theme.primary;
+        const activeMuted = tone?.colorMuted ?? theme.primaryMuted;
         return (
           <Pressable
             key={opt}
@@ -34,11 +41,11 @@ export function PillGroup({
             style={[
               styles.pill,
               {
-                borderColor: isSelected ? theme.primary : theme.border,
-                backgroundColor: isSelected ? theme.primaryMuted : theme.backgroundElement,
+                borderColor: isSelected ? activeColor : theme.border,
+                backgroundColor: isSelected ? activeMuted : theme.backgroundElement,
               },
             ]}>
-            <ThemedText style={[styles.pillText, isSelected && { color: theme.primary }]}>{getLabel(opt)}</ThemedText>
+            <ThemedText style={[styles.pillText, isSelected && { color: activeColor }]}>{getLabel(opt)}</ThemedText>
           </Pressable>
         );
       })}

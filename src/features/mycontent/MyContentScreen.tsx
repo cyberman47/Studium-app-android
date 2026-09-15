@@ -9,23 +9,24 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { removeFlashcardSet, removeNote, useMyContent } from './store';
+import { removeFlashcardSet, useMyContent } from './store';
 
-// Where notes and flashcard sets created via Home's "+" button actually
-// live — a real accordion (same expand-in-place pattern as HelpScreen's
-// FAQ) with a real delete, backed by the same store the create screens
-// write to. Reached from Library's "My Content" row.
+// Where flashcard sets created via Home's "+" button actually live — a
+// real accordion (same expand-in-place pattern as HelpScreen's FAQ) with
+// a real delete, backed by the same store the create screen writes to.
+// Reached from Library's "My Content" row. (Note-taking was dropped from
+// Create per feedback, so this screen no longer has a notes section.)
 export function MyContentScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { notes, flashcardSets } = useMyContent();
+  const { flashcardSets } = useMyContent();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   function toggle(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
 
-  const isEmpty = notes.length === 0 && flashcardSets.length === 0;
+  const isEmpty = flashcardSets.length === 0;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -36,7 +37,7 @@ export function MyContentScreen() {
         <View style={styles.inner}>
           <ScreenHeader title="My Content" />
           <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Notes and flashcard sets you've added yourself.
+            Flashcard sets you've added yourself.
           </ThemedText>
 
           {isEmpty && (
@@ -47,7 +48,7 @@ export function MyContentScreen() {
                 </View>
                 <ThemedText style={styles.emptyTitle}>Nothing here yet</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.emptyDescription}>
-                  Tap the + button on Home to add your first note or flashcard set.
+                  Tap the + button on Home to add your first flashcard set.
                 </ThemedText>
                 <Pressable
                   onPress={() => router.push('/')}
@@ -60,60 +61,6 @@ export function MyContentScreen() {
                   ]}>
                   <ThemedText style={styles.emptyButtonText}>Go to Home</ThemedText>
                 </Pressable>
-              </View>
-            </View>
-          )}
-
-          {notes.length > 0 && (
-            <View style={styles.section}>
-              <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
-                NOTES
-              </ThemedText>
-              <View style={styles.list}>
-                {notes.map((note) => {
-                  const expanded = expandedId === note.id;
-                  return (
-                    <View key={note.id} style={[styles.itemShadow, Shadow.card]}>
-                      <View style={[styles.itemCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                        <Pressable
-                          onPress={() => toggle(note.id)}
-                          accessibilityRole="button"
-                          accessibilityState={{ expanded }}
-                          accessibilityLabel={note.title}
-                          style={styles.itemHeader}>
-                          <View style={[styles.itemIcon, { backgroundColor: theme.primaryMuted }]}>
-                            <Ionicons name="document-text-outline" size={15} color={theme.primary} />
-                          </View>
-                          <ThemedText numberOfLines={expanded ? undefined : 1} style={styles.itemTitle}>
-                            {note.title}
-                          </ThemedText>
-                          <Ionicons
-                            name={expanded ? 'chevron-up' : 'chevron-down'}
-                            size={16}
-                            color={theme.textSecondary}
-                          />
-                        </Pressable>
-                        {expanded && (
-                          <View style={styles.itemBody}>
-                            <ThemedText themeColor="textSecondary" style={styles.itemBodyText}>
-                              {note.body || 'No additional text.'}
-                            </ThemedText>
-                            <Pressable
-                              onPress={() => removeNote(note.id)}
-                              accessibilityRole="button"
-                              accessibilityLabel={`Delete ${note.title}`}
-                              style={styles.deleteRow}>
-                              <Ionicons name="trash-outline" size={14} color={theme.rose} />
-                              <ThemedText themeColor="rose" style={styles.deleteText}>
-                                Delete note
-                              </ThemedText>
-                            </Pressable>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  );
-                })}
               </View>
             </View>
           )}

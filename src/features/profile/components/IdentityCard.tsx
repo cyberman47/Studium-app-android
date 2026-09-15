@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { pathOptions } from '@/constants/paths';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Card } from '@/features/dashboard/components/Card';
@@ -16,7 +17,6 @@ export function IdentityCard({
   avatarColor,
   bio,
   pathLabel,
-  pathEmoji,
   level,
   levelName,
   joinedLabel,
@@ -27,13 +27,16 @@ export function IdentityCard({
   avatarColor?: string;
   bio?: string;
   pathLabel: string;
-  pathEmoji: string;
   level: number;
   levelName: string;
   joinedLabel: string;
   onShare?: () => void;
 }) {
   const theme = useTheme();
+  // Same per-path color as everywhere else the current path shows up
+  // (Home/Learn's badge, Settings' picker) — matched by label since this
+  // card only receives the label, not a PathId.
+  const pathColor = pathOptions.find((p) => p.label === pathLabel);
   return (
     <Card>
       <View style={styles.row}>
@@ -56,10 +59,13 @@ export function IdentityCard({
             <View
               style={[
                 styles.pill,
-                { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
+                {
+                  backgroundColor: pathColor?.colorMuted ?? theme.backgroundSelected,
+                  borderColor: pathColor?.color ?? theme.border,
+                },
               ]}>
-              <ThemedText numberOfLines={1} style={styles.pillText}>
-                {pathEmoji} {pathLabel}
+              <ThemedText numberOfLines={1} style={[styles.pillText, pathColor && { color: pathColor.color }]}>
+                {pathLabel}
               </ThemedText>
             </View>
             <View style={[styles.pill, styles.levelPill, { backgroundColor: theme.primaryMuted }]}>

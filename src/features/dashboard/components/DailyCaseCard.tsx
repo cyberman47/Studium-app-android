@@ -8,18 +8,44 @@ import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { getCaseOfTheDay } from '@/features/dailycase/logic';
 import { useTodayCaseAttempt } from '@/features/dailycase/store';
 
-// Compact Home teaser — tapping it now opens the full Daily Case
-// experience (features/dailycase/DailyCaseScreen.tsx, /daily-case) as
-// its own screen instead of a small in-place bottom sheet, per
-// feedback. Reads the same real, deterministically-rotating "case of
-// the day" the full screen does (features/dailycase/logic.ts), so this
+// Compact Home teaser — tapping it opens the full Daily Case experience
+// (features/dailycase/DailyCaseScreen.tsx, /daily-case) as its own
+// screen. Reads the same real, deterministically-rotating "case of the
+// day" the full screen does (features/dailycase/logic.ts), so this
 // card's title/category/difficulty never drift out of sync with what
 // actually opens.
+//
+// getCaseOfTheDay can now genuinely return null — Medical Cases content
+// was removed and clinicalCases.ts is intentionally empty pending a real
+// Supabase-backed source (see logic.ts). Rather than crash on a null
+// case's fields, this renders an honest "nothing to solve yet" state and
+// isn't tappable, instead of opening a dead-end screen.
 export function DailyCaseCard() {
   const router = useRouter();
   const todaysCase = useMemo(() => getCaseOfTheDay(), []);
   const attempt = useTodayCaseAttempt();
-  const solved = !!attempt && attempt.caseId === todaysCase.id;
+  const solved = !!todaysCase && !!attempt && attempt.caseId === todaysCase.id;
+
+  if (!todaysCase) {
+    return (
+      <View style={[styles.shadowWrap, Shadow.raised]}>
+        <View style={[styles.card, styles.cardDisabled]}>
+          <Ionicons name="pulse" size={90} color="rgba(255,255,255,0.05)" style={styles.watermark} />
+          <View style={styles.iconCircle}>
+            <Ionicons name="pulse-outline" size={16} color="#5EEAD4" />
+          </View>
+          <View style={styles.textCol}>
+            <ThemedText numberOfLines={1} style={styles.eyebrow}>
+              DAILY CASE
+            </ThemedText>
+            <ThemedText style={styles.title} numberOfLines={2}>
+              No case available right now
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.shadowWrap, Shadow.raised]}>
@@ -70,6 +96,9 @@ const styles = StyleSheet.create({
   },
   cardPressed: {
     opacity: 0.85,
+  },
+  cardDisabled: {
+    opacity: 0.6,
   },
   watermark: {
     position: 'absolute',

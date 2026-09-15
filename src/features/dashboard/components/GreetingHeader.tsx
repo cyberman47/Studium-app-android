@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { PathSwitcher } from '@/components/path-switcher';
+import { CurrentPathBadge } from '@/components/current-path-badge';
 import { Skeleton } from '@/components/skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -17,9 +17,11 @@ function getGreeting(): string {
 // underneath it. No "YOUR DASHBOARD" label — the user is obviously on the
 // dashboard, so that pill was pure noise above the one thing that matters.
 //
-// The path badge itself is PathSwitcher (components/path-switcher.tsx) —
-// shared with the Learn tab's header so both show/change the same track
-// picker rather than Learn inventing a second copy.
+// The path badge itself is CurrentPathBadge (components/current-path-
+// badge.tsx) — shared with the Learn tab's header so both show the same
+// track rather than Learn inventing a second copy. It's display-only:
+// changing the study path lives in Settings > General now, not a tap
+// away from here.
 //
 // `loading` skeletons the greeting name and the path badge — both come
 // from the real Supabase fetch (dashboard/remote.ts), and Home renders
@@ -52,7 +54,7 @@ export function GreetingHeader({
         <Skeleton width={120} height={32} radius={Radius.pill} />
       ) : (
         <Animated.View entering={FadeIn.duration(220)}>
-          <PathSwitcher pathLabel={pathLabel} pathEmoji={pathEmoji} loading={loading} />
+          <CurrentPathBadge pathLabel={pathLabel} pathEmoji={pathEmoji} loading={loading} />
         </Animated.View>
       )}
     </View>

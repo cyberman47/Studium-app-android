@@ -5,6 +5,14 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow } from '@/constants/theme';
 
+// completedCount is a real count of lessons actually finished — 0 means
+// exactly that, not "on lesson zero." At 0 the card honestly reads as
+// "Start Learning" pointed at lesson 1, rather than claiming mid-course
+// progress that hasn't happened; once completedCount > 0 it switches to
+// "Continue studying" and resumes at the next lesson in line. Today
+// nothing in the app can actually mark a lesson complete yet, so every
+// real student sees the Start state — this only starts showing "Continue"
+// once that tracking exists.
 export function ContinueCard({
   subject,
   title,
@@ -18,6 +26,9 @@ export function ContinueCard({
   total: number;
   onPress?: () => void;
 }) {
+  const started = completedCount > 0;
+  const currentLessonNumber = Math.min(completedCount + 1, total);
+
   return (
     <View style={[styles.shadowWrap, Shadow.raised]}>
       <LinearGradient
@@ -26,20 +37,20 @@ export function ContinueCard({
         end={{ x: 1, y: 1 }}
         style={styles.card}>
         <View style={styles.textGroup}>
-          <ThemedText style={styles.eyebrow}>Continue studying</ThemedText>
+          <ThemedText style={styles.eyebrow}>{started ? 'Continue studying' : 'Start learning'}</ThemedText>
           <ThemedText style={styles.title}>{title}</ThemedText>
           <ThemedText style={styles.subtitle}>
-            {subject} · Lesson {completedCount} of {total}
+            {subject} · Lesson {currentLessonNumber} of {total}
           </ThemedText>
         </View>
 
         <Pressable
           onPress={onPress}
           accessibilityRole="button"
-          accessibilityLabel={`Resume ${title}`}
+          accessibilityLabel={`${started ? 'Resume' : 'Start'} ${title}`}
           hitSlop={8}
           style={({ pressed }) => [styles.resumeLink, pressed && styles.resumeLinkPressed]}>
-          <ThemedText style={styles.resumeText}>Resume</ThemedText>
+          <ThemedText style={styles.resumeText}>{started ? 'Resume' : 'Start'}</ThemedText>
           <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
         </Pressable>
       </LinearGradient>

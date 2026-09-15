@@ -18,8 +18,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuthState } from '@/features/auth/store';
+import { addFlashcardSet } from '@/features/mycontent/store';
 import { useTheme } from '@/hooks/use-theme';
 import { educationTrackLabel } from '@/lib/educationTrack';
+import { parseFlashcardsFromText } from '@/lib/parseFlashcards';
 import { supabase } from '@/lib/supabase';
 import { streamTutorReply, type TutorContext } from '@/lib/tutorChat';
 
@@ -81,16 +83,70 @@ function deriveTitle(messages: ChatMessage[], lessonTitle: string | undefined): 
   return firstUser.text.length > 40 ? `${firstUser.text.slice(0, 40)}…` : firstUser.text;
 }
 
+// A saved deck's name deserves better than the raw prompt that produced
+// it — especially the Import Material template, whose user message
+// always starts "Here's material from "x.txt". Please turn this into
+// flashcards..." (see CreateScreen.tsx's handleImportMaterial), which
+// makes an unhelpful, half-truncated deck title if used verbatim.
+function deriveFlashcardSetTitle(precedingUserText: string | undefined, lessonTitle: string | undefined): string {
+  if (lessonTitle) return `${lessonTitle} Flashcards`;
+  const text = precedingUserText ?? '';
+
+  // Checked first: Import Material's own template always contains this
+  // exact phrase (see CreateScreen.tsx's handleImportMaterial) and its
+  // generic "covering the key points" wording would otherwise falsely
+  // win the topic-extraction match right below.
+  const fileMatch = text.match(/material from "([^"]+)"/i);
+  if (fileMatch) return `Flashcards from ${fileMatch[1]}`;
+
+  const aboutMatch = text.match(/flashcards?\s+(?:on|about|for|covering)\s+(.+?)[.?!\n]/i);
+  if (aboutMatch) {
+    const topic = aboutMatch[1].trim();
+    return `${topic.charAt(0).toUpperCase()}${topic.slice(1)} Flashcards`;
+  }
+
+  if (!text) return 'AI Flashcards';
+  return text.length > 40 ? `${text.slice(0, 40)}…` : text;
+}
+
 export function AIChatScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { session: sessionParam, term: termParam } = useLocalSearchParams<{ session?: string; term?: string }>();
+  const {
+    session: sessionParam,
+    term: termParam,
+    importedText,
+    importedFileName,
+    importedTruncated,
+  } = useLocalSearchParams<{
+    session?: string;
+    term?: string;
+    importedText?: string;
+    importedFileName?: string;
+    importedTruncated?: string;
+  }>();
   const aiSettings = useAISettings();
   const chatSettings = useChatSettings();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [draft, setDraft] = useState('');
+  // Create > Import Material arrives here with a real file's real text
+  // (see CreateScreen.tsx's handleImportMaterial) — pre-filled as a draft
+  // the student can review or edit, never auto-sent, same as typing it
+  // themselves would be. The explicit "Front: ... Back: ..." format ask
+  // isn't just cosmetic — it's what makes the reply actually parseable
+  // into real flashcards below (see parseFlashcardsFromText/renderSaveRow),
+  // instead of a wall of prose with no way to turn it into a saved deck.
+  const [draft, setDraft] = useState(() => {
+    if (!importedText) return '';
+    const source = importedFileName ? `"${importedFileName}"` : 'a file I have';
+    const truncatedNote = importedTruncated ? ' (truncated to the first 8,000 characters)' : '';
+    return `Here's material from ${source}${truncatedNote}. Please turn this into flashcards covering the key points. Format each one on its own lines, exactly like this:\n\nFront: <question or term>\nBack: <answer or definition>\n\nMaterial:\n"""\n${importedText}\n"""`;
+  });
   const [isTyping, setIsTyping] = useState(false);
+  // Message ids whose parsed flashcards have already been saved into
+  // features/mycontent/store.ts — keeps the Save button from re-adding
+  // the same deck twice on a re-render, and flips it to a done state.
+  const [savedFlashcardIds, setSavedFlashcardIds] = useState<Set<string>>(new Set());
   // "Ask Studium AI" from a term's expanded view (features/terminology/
   // components/TermDetailSheet.tsx) arrives here with ?term=<name> —
   // reuses the exact same "attached lesson" context mechanism the Lesson
@@ -138,6 +194,20 @@ export function AIChatScreen() {
       setSelectedLesson(existing.lessonTitle);
     }
   }, [sessionParam]);
+
+  // The actual fix for "the AI just outputs text, it doesn't make real
+  // flashcards": a reply that parses into Front/Back pairs gets a real
+  // Save action, writing straight into features/mycontent/store.ts — the
+  // same store Create > New Flashcards saves into, so the result shows up
+  // in My Content and Review > Flashcards like any other deck.
+  function saveFlashcardsFromMessage(message: ChatMessage) {
+    const cards = parseFlashcardsFromText(message.text);
+    if (cards.length === 0 || savedFlashcardIds.has(message.id)) return;
+    const index = messages.findIndex((m) => m.id === message.id);
+    const precedingUser = messages.slice(0, index).findLast((m) => m.role === 'user');
+    addFlashcardSet(deriveFlashcardSetTitle(precedingUser?.text, selectedLesson), cards);
+    setSavedFlashcardIds((prev) => new Set(prev).add(message.id));
+  }
 
   function patchMessage(id: string, patch: Partial<ChatMessage>) {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
@@ -274,6 +344,11 @@ export function AIChatScreen() {
               // used, rather than an empty bubble. Once real text starts
               // streaming in, this flips to showing it live.
               const isPending = message.role === 'assistant' && message.streaming && message.text === '';
+              const parsedCards =
+                message.role === 'assistant' && !message.streaming && !message.error
+                  ? parseFlashcardsFromText(message.text)
+                  : [];
+              const alreadySaved = savedFlashcardIds.has(message.id);
               return (
                 <View key={message.id} style={[styles.bubbleRow, message.role === 'user' && styles.bubbleRowUser]}>
                   {message.role === 'assistant' && (
@@ -281,28 +356,51 @@ export function AIChatScreen() {
                       <Ionicons name="sparkles" size={14} color={theme.primary} />
                     </View>
                   )}
-                  <View style={[styles.bubbleShadow, Shadow.card]}>
-                    <View
-                      style={[
-                        styles.bubble,
-                        message.role === 'user'
-                          ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                          : message.error
-                            ? { backgroundColor: theme.roseMuted, borderColor: theme.rose }
-                            : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                      ]}>
-                      {isPending ? (
-                        <View style={styles.typingBarWrap}>
-                          <TypingBar color={theme.primary} trackColor={theme.backgroundSelected} />
-                        </View>
-                      ) : (
-                        <ThemedText
-                          themeColor={message.error ? 'rose' : undefined}
-                          style={[styles.bubbleText, message.role === 'user' && { color: '#FFFFFF' }]}>
-                          {message.text}
-                        </ThemedText>
-                      )}
+                  <View style={styles.bubbleCol}>
+                    <View style={[styles.bubbleShadow, Shadow.card]}>
+                      <View
+                        style={[
+                          styles.bubble,
+                          message.role === 'user'
+                            ? { backgroundColor: theme.primary, borderColor: theme.primary }
+                            : message.error
+                              ? { backgroundColor: theme.roseMuted, borderColor: theme.rose }
+                              : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                        ]}>
+                        {isPending ? (
+                          <View style={styles.typingBarWrap}>
+                            <TypingBar color={theme.primary} trackColor={theme.backgroundSelected} />
+                          </View>
+                        ) : (
+                          <ThemedText
+                            themeColor={message.error ? 'rose' : undefined}
+                            style={[styles.bubbleText, message.role === 'user' && { color: '#FFFFFF' }]}>
+                            {message.text}
+                          </ThemedText>
+                        )}
+                      </View>
                     </View>
+
+                    {parsedCards.length > 0 && (
+                      <Pressable
+                        onPress={() => (alreadySaved ? router.push('/my-content') : saveFlashcardsFromMessage(message))}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          alreadySaved ? 'View saved flashcards in My Content' : `Save ${parsedCards.length} flashcards`
+                        }
+                        style={({ pressed }) => [
+                          styles.saveCardsButton,
+                          { backgroundColor: theme.primaryMuted, borderColor: theme.primary },
+                          pressed && styles.saveCardsButtonPressed,
+                        ]}>
+                        <Ionicons name={alreadySaved ? 'checkmark-circle' : 'albums-outline'} size={14} color={theme.primary} />
+                        <ThemedText themeColor="primary" style={styles.saveCardsText}>
+                          {alreadySaved
+                            ? 'Saved to My Content — tap to view'
+                            : `Save ${parsedCards.length} Flashcard${parsedCards.length === 1 ? '' : 's'}`}
+                        </ThemedText>
+                      </Pressable>
+                    )}
                   </View>
                 </View>
               );
@@ -533,6 +631,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  bubbleCol: {
+    flexShrink: 1,
+    gap: 6,
+  },
   bubbleShadow: {
     borderRadius: Radius.lg,
     flexShrink: 1,
@@ -542,6 +644,23 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 14,
     paddingVertical: 10,
+  },
+  saveCardsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    borderRadius: Radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  saveCardsButtonPressed: {
+    opacity: 0.7,
+  },
+  saveCardsText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   bubbleText: {
     fontSize: 14,

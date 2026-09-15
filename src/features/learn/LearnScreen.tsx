@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PathSwitcher } from '@/components/path-switcher';
+import { CurrentPathBadge } from '@/components/current-path-badge';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { StudyPlannerCard } from '@/features/dashboard/components/StudyPlannerCard';
@@ -15,13 +15,13 @@ import { useTheme } from '@/hooks/use-theme';
 import { getPlannerHomeSnapshot, PlannerHomeSnapshot } from '@/lib/studyPlanner';
 
 // "What am I learning?" — the mobile equivalent of the desktop's STUDY
-// group (Learning Paths + Study Planner), plus Library, which moved here
-// from its own bottom tab. Learning Paths is the real
-// StudyingPathsSection grid embedded directly (not a teaser — it's
-// already the actual functionality, same component /study-paths uses),
-// since this screen exists specifically to be the hub for it; Study
-// Planner and Library stay compact previews that route to their own full
-// screens, so this tab doesn't turn into a third copy of either.
+// group (Courses + Study Planner), plus Library, which moved here from
+// its own bottom tab. Courses is the real StudyingPathsSection grid
+// embedded directly (not a teaser — it's already the actual
+// functionality, same component /study-paths uses), since this screen
+// exists specifically to be the hub for it; Study Planner and Library
+// stay compact previews that route to their own full screens, so this
+// tab doesn't turn into a third copy of either.
 export function LearnScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -57,11 +57,11 @@ export function LearnScreen() {
         <View style={styles.inner}>
           <View style={styles.header}>
             <ThemedText style={styles.title}>Learn</ThemedText>
-            <PathSwitcher pathLabel={pathLabel} pathEmoji={pathEmoji} loading={loading} />
+            <CurrentPathBadge pathLabel={pathLabel} pathEmoji={pathEmoji} loading={loading} />
           </View>
 
-          {/* StudyingPathsSection renders its own "STUDYING PATHS" label
-              already, so this section skips adding a second one on top. */}
+          {/* StudyingPathsSection renders its own "COURSES" label already,
+              so this section skips adding a second one on top. */}
           <StudyingPathsSection onPressTrack={(id) => router.push(`/track/${id}`)} />
 
           <View style={styles.section}>

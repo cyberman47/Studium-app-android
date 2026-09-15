@@ -29,7 +29,6 @@ export type DashboardData = {
   targetKP: number;
   level: number;
   levelName: string;
-  nextLesson: { title: string; subject: string; completedCount: number; total: number };
   // Superseded: DailyCaseCard no longer reads this — it computes the
   // real, deterministically-rotating case of the day itself from
   // features/dailycase (11 real ported cases, not this one static
@@ -71,12 +70,6 @@ export const mockDashboard: DashboardData = {
   targetKP: 50,
   level: 6,
   levelName: 'Rising Clinician',
-  nextLesson: {
-    title: 'Cell Membrane & Transport',
-    subject: 'Biology',
-    completedCount: 5,
-    total: 9,
-  },
   // Real content, matching lib/clinicalCases.ts's "sudden-breathlessness-
   // postpartum" case on the web exactly (title, category, stem, question,
   // options, correctIndex, explanation) — not invented for the mobile app.

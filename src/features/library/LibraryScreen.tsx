@@ -34,17 +34,16 @@ export function LibraryScreen() {
   const theme = useTheme();
   const router = useRouter();
   const data = mockLibrary;
-  const { notes, flashcardSets } = useMyContent();
+  const { flashcardSets } = useMyContent();
 
   function openItem(id: string) {
     router.push(`/libraryitem/${id}`);
   }
 
-  const myContentCount = notes.length + flashcardSets.length;
   const myContentSubtitle =
-    myContentCount === 0
-      ? 'Add your first note or flashcard set from Create'
-      : `${notes.length} note${notes.length === 1 ? '' : 's'} · ${flashcardSets.length} set${flashcardSets.length === 1 ? '' : 's'}`;
+    flashcardSets.length === 0
+      ? 'Add your first flashcard set from Create'
+      : `${flashcardSets.length} set${flashcardSets.length === 1 ? '' : 's'}`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>

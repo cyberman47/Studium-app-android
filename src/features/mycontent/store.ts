@@ -1,23 +1,17 @@
 import { useSyncExternalStore } from 'react';
 
 /**
- * What the Home screen's "+" import button actually creates — notes and
- * flashcard sets a student types in themselves (there's no file-import
- * pipeline wired up, so "import" here means "add your own", the same way
- * "profile picture" in Settings means "pick a color", not a photo upload).
- * Same plain module-level useSyncExternalStore pattern as
- * features/profile/store.ts — only Home (create) and My Content (list/
- * delete) ever need this, so a state library would be overkill. Read by
- * Library's "My Content" row and the My Content screen; written by
- * NewNoteScreen / NewFlashcardScreen.
+ * What the Home screen's "+" import button actually creates — flashcard
+ * sets a student types in themselves (there's no file-import pipeline
+ * wired up, so "import" here means "add your own", the same way "profile
+ * picture" in Settings means "pick a color", not a photo upload). Same
+ * plain module-level useSyncExternalStore pattern as features/profile/
+ * store.ts — only Home (create) and My Content (list/delete) ever need
+ * this, so a state library would be overkill. Read by Library's "My
+ * Content" row and the My Content screen; written by NewFlashcardScreen.
+ * (Note-taking was dropped from Create per feedback — this store used to
+ * also hold a `notes` list for it.)
  */
-
-export type Note = {
-  id: string;
-  title: string;
-  body: string;
-  createdAt: number;
-};
 
 export type FlashcardSet = {
   id: string;
@@ -27,12 +21,10 @@ export type FlashcardSet = {
 };
 
 type MyContent = {
-  notes: Note[];
   flashcardSets: FlashcardSet[];
 };
 
 let state: MyContent = {
-  notes: [],
   flashcardSets: [],
 };
 
@@ -53,17 +45,6 @@ function getState(): MyContent {
 
 export function useMyContent(): MyContent {
   return useSyncExternalStore(subscribe, getState);
-}
-
-export function addNote(title: string, body: string) {
-  const note: Note = { id: `note-${Date.now()}`, title, body, createdAt: Date.now() };
-  state = { ...state, notes: [note, ...state.notes] };
-  emit();
-}
-
-export function removeNote(id: string) {
-  state = { ...state, notes: state.notes.filter((n) => n.id !== id) };
-  emit();
 }
 
 export function addFlashcardSet(title: string, cards: { front: string; back: string }[]) {

@@ -44,7 +44,7 @@ function AuthGate() {
 // SettingsHubScreen.tsx, which absorbed the old separate /more and
 // /settings-app screens), Passport, Forum, Challenges, Study Groups,
 // Contribute, Notifications, Invite, Help, About, Studium AI chat, the
-// note/flashcard creation + My Content screens reached from Home's "+",
+// flashcard creation + My Content screens reached from Home's "+",
 // and the Welcome/Auth screens — have somewhere to push onto. NativeTabs
 // alone (the previous setup here) has no concept of a screen outside its own declared
 // triggers, so router.push('/settings') silently went nowhere before
@@ -69,17 +69,21 @@ export default function RootLayout() {
         <Stack.Screen name="leaderboard" options={{ presentation: 'card' }} />
         <Stack.Screen name="student/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="daily-case" options={{ presentation: 'card' }} />
+        <Stack.Screen name="streak-reveal" options={{ presentation: 'transparentModal', animation: 'fade' }} />
         <Stack.Screen name="new-word" options={{ presentation: 'card' }} />
         <Stack.Screen name="study-paths" options={{ presentation: 'card' }} />
         <Stack.Screen name="library" options={{ presentation: 'card' }} />
         <Stack.Screen name="progress" options={{ presentation: 'card' }} />
         <Stack.Screen name="study-planner" options={{ presentation: 'card' }} />
+        <Stack.Screen name="lesson-list" options={{ presentation: 'card' }} />
+        <Stack.Screen name="practice" options={{ presentation: 'card' }} />
         <Stack.Screen name="passport" options={{ presentation: 'card' }} />
         <Stack.Screen name="forum" options={{ presentation: 'card' }} />
         <Stack.Screen name="challenges" options={{ presentation: 'card' }} />
         <Stack.Screen name="study-groups" options={{ presentation: 'card' }} />
         <Stack.Screen name="contribute" options={{ presentation: 'card' }} />
         <Stack.Screen name="track/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="anatomy-quiz" options={{ presentation: 'card' }} />
         <Stack.Screen name="libraryitem/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
         <Stack.Screen name="invite" options={{ presentation: 'card' }} />
@@ -89,7 +93,6 @@ export default function RootLayout() {
         <Stack.Screen name="ai-chat-history" options={{ presentation: 'card' }} />
         <Stack.Screen name="ai-chat-settings" options={{ presentation: 'card' }} />
         <Stack.Screen name="ai-settings" options={{ presentation: 'card' }} />
-        <Stack.Screen name="new-note" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-flashcards" options={{ presentation: 'card' }} />
         <Stack.Screen name="new-quiz" options={{ presentation: 'card' }} />
         <Stack.Screen name="my-content" options={{ presentation: 'card' }} />

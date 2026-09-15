@@ -1,9 +1,12 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow } from '@/constants/theme';
 import { useResolvedThemeName, useTheme } from '@/hooks/use-theme';
+import { getAllMcatSubjectsWithLessons, getQuestionCountsForLessons } from '@/lib/contentBank';
+import { lessonCompletion, useQuestionBankProgress } from '@/lib/questionBankProgress';
 
 import { MCATSectionCardData, mcatSectionCards } from '../mcatSectionCards';
 
@@ -38,7 +41,9 @@ function useMcatPalette() {
   };
 }
 
-function MCATSectionRow({ item, onPress }: { item: MCATSectionCardData; onPress?: () => void }) {
+type MCATSectionSummary = MCATSectionCardData & { completed: number; total: number };
+
+function MCATSectionRow({ item, onPress }: { item: MCATSectionSummary; onPress?: () => void }) {
   const palette = useMcatPalette();
   const percent = item.total > 0 ? Math.round((item.completed / item.total) * 100) : 0;
   const started = item.completed > 0;
@@ -84,10 +89,51 @@ function MCATSectionRow({ item, onPress }: { item: MCATSectionCardData; onPress?
   );
 }
 
+// Merges the static per-section metadata above with real lesson counts and
+// completion, fetched once from Supabase (lib/contentBank.ts) — every
+// subject's real lessons in one batch of parallel requests, then grouped
+// by section_id, exactly matching the 4 static ids above.
 export function MCATSectionList({ onPressItem }: { onPressItem?: (item: MCATSectionCardData) => void }) {
+  const theme = useTheme();
+  const progress = useQuestionBankProgress();
+  const [summaries, setSummaries] = useState<MCATSectionSummary[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllMcatSubjectsWithLessons()
+      .then(async (subjectGroups) => {
+        const allLessonIds = subjectGroups.flatMap((g) => g.lessons.map((l) => l.id));
+        const counts = await getQuestionCountsForLessons('mcat', allLessonIds);
+        if (cancelled) return;
+
+        const next = mcatSectionCards.map((card) => {
+          const groupsInSection = subjectGroups.filter((g) => g.subject.sectionId === card.id);
+          const lessons = groupsInSection.flatMap((g) => g.lessons);
+          const total = lessons.length;
+          const completed = lessons.filter((l) => lessonCompletion(progress, 'mcat', l.id, counts[l.id] ?? 0).done).length;
+          return { ...card, completed, total };
+        });
+        setSummaries(next);
+      })
+      .catch(() => {
+        if (!cancelled) setSummaries(mcatSectionCards.map((card) => ({ ...card, completed: 0, total: 0 })));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [progress]);
+
+  if (!summaries) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator color={theme.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.list}>
-      {mcatSectionCards.map((item) => (
+      {summaries.map((item) => (
         <View key={item.id} style={[styles.shadowWrap, Shadow.card]}>
           <MCATSectionRow item={item} onPress={onPressItem ? () => onPressItem(item) : undefined} />
         </View>
@@ -97,6 +143,10 @@ export function MCATSectionList({ onPressItem }: { onPressItem?: (item: MCATSect
 }
 
 const styles = StyleSheet.create({
+  loadingWrap: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
   list: {
     gap: 12,
   },

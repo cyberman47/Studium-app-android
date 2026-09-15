@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,19 +14,22 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 import { DateField } from '@/components/date-field';
 import { ScreenHeader } from '@/components/screen-header';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useAuthState } from '@/features/auth/store';
-import { useTheme } from '@/hooks/use-theme';
+import { useResolvedThemeName, useTheme } from '@/hooks/use-theme';
 import { educationTrackLabel } from '@/lib/educationTrack';
 import {
   getCurrentWeeklyPlan,
+  getDaysRemaining,
   getPlannerOnboarding,
   getTaskCompletion,
   PlannerOnboarding,
+  PlanTask,
   requestWeeklyPlan,
   setPlannerOnboarding,
   toggleTaskDone,
@@ -62,6 +66,46 @@ const ACTIVITY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const WIZARD_STEPS = 4; // exam date, hours/week, confidence, preferred days
 
 type Phase = 'loading' | 'wizard' | 'generating' | 'results';
+
+// Real per-task priority (task.priority — always present on every real
+// generated task, just never rendered before) gets a color instead of
+// being dropped on the floor; real subject grouping likewise gets a
+// rotating color per group so scanning the task list is about shape/color
+// first, text second. Not per-subject brand colors (there's no fixed
+// subject→color mapping anywhere in this app) — just a small palette
+// cycling by index, same pattern tracks.ts/anatomy's tint arrays use.
+const PRIORITY_COLOR: Record<PlanTask['priority'], string> = { high: '#E11D48', medium: '#D97706', low: '#0F8B8D' };
+const SUBJECT_TINTS: { light: [string, string]; dark: [string, string] }[] = [
+  { light: ['#E0E7FF', '#4F46E5'], dark: ['rgba(99, 102, 241, 0.2)', '#A5B4FC'] },
+  { light: ['#D1FAE5', '#059669'], dark: ['rgba(16, 185, 129, 0.2)', '#6EE7B7'] },
+  { light: ['#FFE4E6', '#E11D48'], dark: ['rgba(244, 63, 94, 0.2)', '#FDA4AF'] },
+  { light: ['#FEF3C7', '#D97706'], dark: ['rgba(245, 158, 11, 0.2)', '#FCD34D'] },
+  { light: ['#E0F2FE', '#0284C7'], dark: ['rgba(14, 165, 233, 0.2)', '#7DD3FC'] },
+];
+
+// Groups the plan's flat task list by its real `subject` field, preserving
+// the order subjects first appear in — there's no per-task day/schedule
+// field in the real data (see lib/studyPlanner.ts's PlanTask), so subject
+// is the one real, meaningful way to break a "this week" list into
+// sections instead of one long undifferentiated stack.
+function groupBySubject(tasks: PlanTask[]): { subject: string; tasks: PlanTask[] }[] {
+  const order: string[] = [];
+  const bySubject = new Map<string, PlanTask[]>();
+  for (const task of tasks) {
+    if (!bySubject.has(task.subject)) {
+      order.push(task.subject);
+      bySubject.set(task.subject, []);
+    }
+    bySubject.get(task.subject)!.push(task);
+  }
+  return order.map((subject) => ({ subject, tasks: bySubject.get(subject)! }));
+}
+
+const RING_SIZE = 68;
+const RING_STROKE = 7;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 // The mobile MVP of studium-website's Study Planner, now asked the same
 // way the onboarding flow already asks its questions — one page, one
@@ -177,6 +221,26 @@ export function StudyPlannerScreen() {
     const next = await toggleTaskDone(plan.weekStartDateKey, taskId);
     setCompletion(next);
   }
+
+  const isDark = useResolvedThemeName() === 'dark';
+  const doneCount = plan ? plan.tasks.filter((t) => completion[t.id]).length : 0;
+  const totalCount = plan ? plan.tasks.length : 0;
+  const percentDone = totalCount > 0 ? (doneCount / totalCount) * 100 : 0;
+  const subjectGroups = plan ? groupBySubject(plan.tasks) : [];
+
+  // Animates the ring to the real completion percent whenever it changes
+  // (results just loaded, or a task got checked off) — useNativeDriver
+  // false because strokeDashoffset is an SVG prop, not a transform/opacity
+  // style, so the native driver can't carry it.
+  const ringProgress = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(ringProgress, { toValue: percentDone, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [percentDone]);
+  const ringDashoffset = ringProgress.interpolate({
+    inputRange: [0, 100],
+    outputRange: [RING_CIRCUMFERENCE, 0],
+  });
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
@@ -353,67 +417,158 @@ export function StudyPlannerScreen() {
 
               {phase === 'results' && plan && (
                 <View style={styles.resultsBody}>
-                  <View style={[styles.goalCard, Shadow.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                    <ThemedText themeColor="textSecondary" style={styles.goalCaption}>
-                      THIS WEEK'S GOAL
-                    </ThemedText>
-                    <ThemedText style={styles.goalText}>{plan.weeklyGoal}</ThemedText>
+                  {/* Hero: the goal, plus a real progress ring (tasks
+                      actually completed / actually in this week's plan —
+                      the same two numbers Home's Plan KP chip reads) so
+                      "how am I doing this week" is a glance, not a count
+                      you do yourself down in the task list. */}
+                  <View style={[styles.heroShadow, Shadow.raised]}>
+                    <LinearGradient colors={['#0F8B8D', '#0B6467']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
+                      <ThemedText style={styles.heroEyebrow}>THIS WEEK&apos;S GOAL</ThemedText>
+                      <ThemedText style={styles.heroGoal}>{plan.weeklyGoal}</ThemedText>
+
+                      <View style={styles.heroBottomRow}>
+                        <View style={styles.ringWrap}>
+                          <Svg width={RING_SIZE} height={RING_SIZE}>
+                            <Circle
+                              cx={RING_SIZE / 2}
+                              cy={RING_SIZE / 2}
+                              r={RING_RADIUS}
+                              stroke="rgba(255,255,255,0.25)"
+                              strokeWidth={RING_STROKE}
+                              fill="none"
+                            />
+                            <AnimatedCircle
+                              cx={RING_SIZE / 2}
+                              cy={RING_SIZE / 2}
+                              r={RING_RADIUS}
+                              stroke="#FFFFFF"
+                              strokeWidth={RING_STROKE}
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeDasharray={`${RING_CIRCUMFERENCE}, ${RING_CIRCUMFERENCE}`}
+                              strokeDashoffset={ringDashoffset}
+                              rotation={-90}
+                              origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+                            />
+                          </Svg>
+                          <View style={styles.ringLabelWrap} pointerEvents="none">
+                            <ThemedText style={styles.ringLabel}>
+                              {doneCount}/{totalCount}
+                            </ThemedText>
+                          </View>
+                        </View>
+                        <View style={styles.heroMeta}>
+                          <ThemedText style={styles.heroMetaHeadline}>{Math.round(percentDone)}% of this week done</ThemedText>
+                          <ThemedText style={styles.heroMetaSub}>{getDaysRemaining(plan.examDate)} days to exam</ThemedText>
+                        </View>
+                      </View>
+                    </LinearGradient>
                   </View>
 
+                  {/* Priorities as a horizontal row of compact cards
+                      instead of a stack of full-width paragraphs — the
+                      same three real fields (subject, topic, reason), just
+                      skimmed sideways instead of read top to bottom. */}
                   {plan.priorities.length > 0 && (
                     <View style={styles.section}>
                       <ThemedText style={styles.sectionLabel}>Priorities</ThemedText>
-                      {plan.priorities.map((p, i) => (
-                        <View key={i} style={[styles.priorityRow, { borderColor: theme.border }]}>
-                          <ThemedText style={styles.priorityTitle}>
-                            {p.subject} · {p.topic}
-                          </ThemedText>
-                          <ThemedText themeColor="textSecondary" style={styles.hint}>
-                            {p.reason}
-                          </ThemedText>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  <View style={styles.section}>
-                    <ThemedText style={styles.sectionLabel}>Tasks</ThemedText>
-                    {plan.tasks.map((task) => {
-                      const done = !!completion[task.id];
-                      return (
-                        <Pressable
-                          key={task.id}
-                          onPress={() => handleToggleTask(task.id)}
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: done }}
-                          accessibilityLabel={task.title}
-                          style={[styles.taskRow, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-                          <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={done ? theme.primary : theme.textSecondary} />
-                          <View style={styles.taskBody}>
-                            <ThemedText style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</ThemedText>
-                            <View style={styles.taskMetaRow}>
-                              <Ionicons name={ACTIVITY_ICONS[task.activityType] ?? 'book-outline'} size={12} color={theme.textSecondary} />
-                              <ThemedText themeColor="textSecondary" style={styles.taskMeta}>
-                                {task.subject} · {task.durationMinutes} min
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.priorityScroll}>
+                        {plan.priorities.map((p, i) => (
+                          <View key={i} style={[styles.priorityCardShadow, Shadow.card]}>
+                            <View style={[styles.priorityCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                              <View style={[styles.priorityDot, { backgroundColor: SUBJECT_TINTS[i % SUBJECT_TINTS.length][isDark ? 'dark' : 'light'][1] }]} />
+                              <ThemedText numberOfLines={1} style={styles.priorityCardTitle}>
+                                {p.subject}
+                              </ThemedText>
+                              <ThemedText numberOfLines={1} themeColor="textSecondary" style={styles.priorityCardTopic}>
+                                {p.topic}
+                              </ThemedText>
+                              <ThemedText numberOfLines={4} themeColor="textSecondary" style={styles.priorityCardReason}>
+                                {p.reason}
                               </ThemedText>
                             </View>
                           </View>
-                        </Pressable>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Tasks grouped by their real subject — the one real
+                      field that can meaningfully break up "everything due
+                      this week" into sections, since no per-task day
+                      exists in the real plan data (see PlanTask). Each
+                      task's real priority (high/medium/low) is now a
+                      color dot instead of information that existed but was
+                      never actually shown. */}
+                  <View style={styles.section}>
+                    <View style={styles.tasksHeaderRow}>
+                      <ThemedText style={styles.sectionLabel}>Tasks</ThemedText>
+                      <ThemedText themeColor="textSecondary" style={styles.tasksHeaderCount}>
+                        {doneCount}/{totalCount} done
+                      </ThemedText>
+                    </View>
+
+                    {subjectGroups.map(({ subject, tasks }, groupIndex) => {
+                      const tint = SUBJECT_TINTS[groupIndex % SUBJECT_TINTS.length][isDark ? 'dark' : 'light'];
+                      const subjectDone = tasks.filter((t) => completion[t.id]).length;
+                      return (
+                        <View key={subject} style={styles.subjectGroup}>
+                          <View style={styles.subjectHeaderRow}>
+                            <View style={[styles.subjectDot, { backgroundColor: tint[1] }]} />
+                            <ThemedText numberOfLines={1} style={styles.subjectHeaderText}>
+                              {subject}
+                            </ThemedText>
+                            <ThemedText themeColor="textSecondary" style={styles.subjectHeaderCount}>
+                              {subjectDone}/{tasks.length}
+                            </ThemedText>
+                          </View>
+
+                          {tasks.map((task) => {
+                            const done = !!completion[task.id];
+                            return (
+                              <Pressable
+                                key={task.id}
+                                onPress={() => handleToggleTask(task.id)}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: done }}
+                                accessibilityLabel={`${task.title}, ${task.priority} priority, ${task.durationMinutes} minutes`}
+                                style={[styles.taskRow, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+                                <Ionicons name={done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={done ? theme.primary : theme.textSecondary} />
+                                <View style={[styles.priorityBar, { backgroundColor: done ? theme.border : PRIORITY_COLOR[task.priority] }]} />
+                                <ThemedText numberOfLines={2} style={[styles.taskTitle, done && styles.taskTitleDone]}>
+                                  {task.title}
+                                </ThemedText>
+                                <View style={[styles.taskChip, { backgroundColor: theme.backgroundSelected }]}>
+                                  <Ionicons name={ACTIVITY_ICONS[task.activityType] ?? 'book-outline'} size={11} color={theme.textSecondary} />
+                                  <ThemedText themeColor="textSecondary" style={styles.taskChipText}>
+                                    {task.durationMinutes}m
+                                  </ThemedText>
+                                </View>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
                       );
                     })}
                   </View>
 
+                  {/* Tips as a horizontal row of small cards instead of a
+                      bullet list — the same real sentences, just not all
+                      demanding to be read top to bottom in one go. */}
                   {plan.tips.length > 0 && (
                     <View style={styles.section}>
                       <ThemedText style={styles.sectionLabel}>Tips</ThemedText>
-                      {plan.tips.map((tip, i) => (
-                        <View key={i} style={styles.tipRow}>
-                          <Ionicons name="bulb-outline" size={14} color={theme.amber} />
-                          <ThemedText themeColor="textSecondary" style={styles.tipText}>
-                            {tip}
-                          </ThemedText>
-                        </View>
-                      ))}
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tipScroll}>
+                        {plan.tips.map((tip, i) => (
+                          <View key={i} style={[styles.tipCard, { backgroundColor: theme.amberMuted }]}>
+                            <Ionicons name="bulb" size={14} color={theme.amber} />
+                            <ThemedText numberOfLines={5} style={styles.tipCardText}>
+                              {tip}
+                            </ThemedText>
+                          </View>
+                        ))}
+                      </ScrollView>
                     </View>
                   )}
 
@@ -582,29 +737,79 @@ const styles = StyleSheet.create({
   generatingBody: { alignItems: 'center', paddingTop: Spacing.six, gap: 6 },
   generatingIcon: { width: 64, height: 64, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.two },
 
-  resultsBody: { gap: 16 },
-  goalCard: { borderRadius: Radius.lg, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 6 },
-  goalCaption: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
-  goalText: { fontSize: 16, fontWeight: '800', lineHeight: 22 },
-  section: { gap: 8 },
+  resultsBody: { gap: 20 },
+
+  // ---- Hero ----
+  heroShadow: { borderRadius: Radius.xl },
+  hero: { borderRadius: Radius.xl, padding: 20, gap: 4 },
+  heroEyebrow: { color: 'rgba(255,255,255,0.72)', fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  heroGoal: { color: '#FFFFFF', fontSize: 19, fontWeight: '800', lineHeight: 25, marginTop: 2 },
+  heroBottomRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 18 },
+  ringWrap: { width: RING_SIZE, height: RING_SIZE, alignItems: 'center', justifyContent: 'center' },
+  ringLabelWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  ringLabel: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  heroMeta: { flex: 1, gap: 2 },
+  heroMetaHeadline: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  heroMetaSub: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600', marginTop: 2 },
+
+  section: { gap: 10 },
   sectionLabel: { fontSize: 13, fontWeight: '700' },
-  priorityRow: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 2 },
-  priorityTitle: { fontSize: 13, fontWeight: '700' },
+
+  // ---- Priorities (horizontal cards) ----
+  priorityScroll: { gap: 10, paddingRight: Spacing.four, paddingVertical: 2 },
+  priorityCardShadow: { borderRadius: Radius.lg },
+  priorityCard: {
+    width: 168,
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 14,
+    gap: 3,
+  },
+  priorityDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 4 },
+  priorityCardTitle: { fontSize: 13, fontWeight: '800' },
+  priorityCardTopic: { fontSize: 11, fontWeight: '600' },
+  priorityCardReason: { fontSize: 11.5, lineHeight: 16, marginTop: 4 },
+
+  // ---- Tasks (grouped by subject) ----
+  tasksHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tasksHeaderCount: { fontSize: 12, fontWeight: '700' },
+  subjectGroup: { gap: 8, marginTop: 4 },
+  subjectHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  subjectDot: { width: 8, height: 8, borderRadius: 4 },
+  subjectHeaderText: { flex: 1, minWidth: 0, fontSize: 13, fontWeight: '800' },
+  subjectHeaderCount: { fontSize: 11, fontWeight: '700' },
   taskRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.md,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
   },
-  taskBody: { flex: 1, gap: 4 },
-  taskTitle: { fontSize: 14, fontWeight: '700' },
+  priorityBar: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
+  taskTitle: { flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: '700', lineHeight: 18 },
   taskTitleDone: { textDecorationLine: 'line-through', opacity: 0.5 },
-  taskMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  taskMeta: { fontSize: 11, fontWeight: '600' },
-  tipRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  tipText: { fontSize: 13, flex: 1, lineHeight: 18 },
+  taskChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  taskChipText: { fontSize: 10.5, fontWeight: '700' },
+
+  // ---- Tips (horizontal cards) ----
+  tipScroll: { gap: 10, paddingRight: Spacing.four, paddingVertical: 2 },
+  tipCard: {
+    width: 190,
+    borderRadius: Radius.lg,
+    padding: 14,
+    gap: 8,
+  },
+  tipCardText: { fontSize: 12.5, lineHeight: 18, fontWeight: '500' },
+
   secondaryButton: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: Radius.pill,

@@ -9,18 +9,20 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { StudyingPathsSection } from './components/StudyingPathsSection';
 
-// The mobile equivalent of the web app's Learning Paths page
-// (app/dashboard/(main)/learning-paths/page.tsx) — starts with just the
-// "Browse Paths" grid; a "Continue" card for whichever track has real
+// The mobile equivalent of the web app's Courses page
+// (app/dashboard/(main)/courses/page.tsx) — starts with just the "Browse
+// Courses" grid; a "Continue" card for whichever track has real
 // per-lesson progress (MCAT → Biology on the web) is the natural next
 // addition here once the mobile app reads real lesson content. Every
 // card is a real, working button now — it opens that track's detail
-// screen (app/track/[id].tsx).
+// screen (app/track/[id].tsx), and the grid itself narrows down to what's
+// relevant to the student's current path, same as the web (see
+// StudyingPathsSection).
 //
 // A plain pushed screen (/study-paths) now, not a bottom tab — reached
-// from the Learn tab's "Learning Paths" section — so it uses the same
-// ScreenHeader back-button every other pushed screen does instead of the
-// bare title a tab screen doesn't need a way back from.
+// from the Learn tab's Courses section — so it uses the same ScreenHeader
+// back-button every other pushed screen does instead of the bare title a
+// tab screen doesn't need a way back from.
 export function StudyScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -32,7 +34,7 @@ export function StudyScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
         <View style={styles.inner}>
-          <ScreenHeader title="Study Paths" />
+          <ScreenHeader title="Courses" />
           <ThemedText themeColor="textSecondary" style={styles.subtitle}>
             A guided route through what to study next.
           </ThemedText>

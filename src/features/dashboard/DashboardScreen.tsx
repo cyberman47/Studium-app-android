@@ -1,11 +1,13 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, MaxContentWidth, Radius, Shadow, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { getMcatLessons, getMcatSubjects, getQuestionCountsForLessons } from '@/lib/contentBank';
+import { lessonCompletion, useQuestionBankProgress } from '@/lib/questionBankProgress';
 import { getPlannerHomeSnapshot, PlannerHomeSnapshot } from '@/lib/studyPlanner';
 
 import { ContinueCard } from './components/ContinueCard';
@@ -15,16 +17,17 @@ import { HomeFabs } from './components/HomeFabs';
 import { HomeListSection } from './components/HomeListSection';
 import { RecommendedTodayCard } from './components/RecommendedTodayCard';
 import { StatsRow } from './components/StatsRow';
-import { StudyPlannerCard } from './components/StudyPlannerCard';
 import { DashboardData, mockDashboard } from './data';
 import { useRealDashboardStats } from './remote';
 
 // "What should I study right now?" — the desktop dashboard's own
 // hierarchy, translated: Greeting + path → Continue Studying → Today's
-// progress → Daily Case → Recommended for Today → Study Planner →
-// Leaderboard/Performance. The old four-tile Quick Access grid
-// (Flashcards/Quizzes/Library/Planner) is gone — every one of those now
-// has a real home in the Learn or Review tab instead of a redundant
+// progress (whose "View study plan" bar is the only Study Planner entry
+// point on this screen now — the separate full Study Planner card lower
+// down was redundant with it and was removed) → Daily Case → Recommended
+// for Today → Leaderboard/Performance. The old four-tile Quick Access
+// grid (Flashcards/Quizzes/Library/Planner) is gone — every one of those
+// now has a real home in the Learn or Review tab instead of a redundant
 // shortcut row here.
 export function DashboardScreen() {
   const theme = useTheme();
@@ -61,6 +64,52 @@ export function DashboardScreen() {
     }, []),
   );
 
+  // The real "Continue Studying" lesson — MCAT Biology's first not-yet-
+  // finished lesson (see lib/contentBank.ts / questionBankProgress.ts),
+  // not the old hardcoded mock. Re-read on every focus, same reason as
+  // plannerSnapshot above: finishing a lesson's questions should move
+  // this card to the next one the moment the student is back on Home.
+  const progress = useQuestionBankProgress();
+  const [nextLesson, setNextLesson] = useState<{
+    subject: string;
+    lessonId: string;
+    title: string;
+    completedCount: number;
+    total: number;
+  } | null>(null);
+  const [nextLessonError, setNextLessonError] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const subjects = await getMcatSubjects();
+          const biology = subjects.find((s) => s.name === 'Biology') ?? subjects[0];
+          if (!biology) return;
+          const lessons = await getMcatLessons(biology.id);
+          const counts = await getQuestionCountsForLessons('mcat', lessons.map((l) => l.id));
+          const completions = lessons.map((l) => lessonCompletion(progress, 'mcat', l.id, counts[l.id] ?? 0));
+          const nextIndex = completions.findIndex((c) => !c.done);
+          const current = lessons[nextIndex === -1 ? lessons.length - 1 : nextIndex];
+          if (!cancelled && current) {
+            setNextLesson({
+              subject: biology.name,
+              lessonId: current.id,
+              title: current.title,
+              completedCount: completions.filter((c) => c.done).length,
+              total: lessons.length,
+            });
+          }
+        } catch {
+          if (!cancelled) setNextLessonError(true);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [progress]),
+  );
+
   const data: DashboardData = stats
     ? {
         ...mockDashboard,
@@ -85,16 +134,25 @@ export function DashboardScreen() {
     : plannerSnapshot
       ? { ...mockDashboard, daysToExam: plannerSnapshot.daysToExam }
       : mockDashboard;
-  // Deliberately NOT the same numbers as StatsRow's Plan KP chip below —
-  // AppHeader's streak pill is real-when-available daily-streak KP (see
-  // remote.ts: todayKP always 0 today, no real per-day backend exists
-  // yet), a genuinely different fact from "tasks done in this week's
-  // Study Planner plan." Feeding plannerSnapshot's numbers into the
-  // streak pill would make it claim a daily streak was secured by
-  // checking off plan tasks, which isn't true.
   const goToProgress = () => router.push('/progress');
   const goToStudyPlanner = () => router.push('/study-planner');
-  const streakSecured = data.todayKP >= data.targetKP;
+  // The streak pill specifically gets the animated reveal first (real
+  // numbers, just handed off with a beat of ceremony) rather than jumping
+  // straight to Progress the way Performance's row still does — see
+  // features/progress/StreakRevealScreen.tsx. Both the route prefetch and
+  // the real planner fetch fire right here, at the moment of the tap —
+  // before the reveal screen even mounts — rather than waiting for that
+  // screen's own effect to kick them off, so Progress has the longest
+  // possible head start on being ready by the time the reveal hands off
+  // to it.
+  const goToStreakReveal = () => {
+    router.prefetch('/progress');
+    getPlannerHomeSnapshot().catch(() => {});
+    router.push({
+      pathname: '/streak-reveal',
+      params: { streakDays: String(data.streakDays), todayKP: String(data.todayKP), targetKP: String(data.targetKP) },
+    });
+  };
   const planKpEarned = plannerSnapshot ? plannerSnapshot.planKpEarned : mockDashboard.todayKP;
   const planKpTarget = plannerSnapshot ? plannerSnapshot.planKpTarget : mockDashboard.targetKP;
 
@@ -105,7 +163,7 @@ export function DashboardScreen() {
         todayKP={data.todayKP}
         targetKP={data.targetKP}
         loading={loading}
-        onPressStreak={goToProgress}
+        onPressStreak={goToStreakReveal}
       />
       <ScrollView
         style={styles.scroll}
@@ -114,13 +172,31 @@ export function DashboardScreen() {
         <View style={styles.inner}>
           <GreetingHeader name={data.name} pathLabel={data.pathLabel} pathEmoji={data.pathEmoji} loading={loading} />
 
-          <ContinueCard
-            subject={data.nextLesson.subject}
-            title={data.nextLesson.title}
-            completedCount={data.nextLesson.completedCount}
-            total={data.nextLesson.total}
-            onPress={() => router.push('/track/mcat')}
-          />
+          {nextLesson ? (
+            <ContinueCard
+              subject={nextLesson.subject}
+              title={nextLesson.title}
+              completedCount={nextLesson.completedCount}
+              total={nextLesson.total}
+              onPress={() =>
+                router.push({
+                  pathname: '/practice',
+                  params: {
+                    track: 'mcat',
+                    lessonId: nextLesson.lessonId,
+                    lessonTitle: nextLesson.title,
+                    subjectTitle: nextLesson.subject,
+                  },
+                })
+              }
+            />
+          ) : nextLessonError ? null : (
+            <View style={[styles.continueCardShadow, Shadow.raised]}>
+              <View style={[styles.continueCardLoading, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                <ActivityIndicator color={theme.primary} />
+              </View>
+            </View>
+          )}
 
           <StatsRow
             daysToExam={data.daysToExam}
@@ -141,13 +217,6 @@ export function DashboardScreen() {
             onPress={() => router.push('/track/mcat')}
           />
 
-          <StudyPlannerCard
-            pathLabel={data.pathLabel}
-            daysToExam={data.daysToExam}
-            streakSecured={streakSecured}
-            onViewPlan={goToStudyPlanner}
-          />
-
           <HomeListSection
             topLeaderboardRow={data.leaderboard[0]}
             performance={{ level: data.level, levelName: data.levelName, totalKP: data.totalKP }}
@@ -166,6 +235,16 @@ export function DashboardScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  continueCardShadow: {
+    borderRadius: Radius.lg,
+  },
+  continueCardLoading: {
+    borderRadius: Radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 108,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
     flex: 1,

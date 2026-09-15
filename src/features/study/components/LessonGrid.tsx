@@ -5,7 +5,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Radius, Shadow } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-export type LessonGridItem = { title: string; subtitle: string };
+export type LessonGridItem = { id?: string; title: string; subtitle: string };
 
 function LessonCard({
   item,
@@ -73,7 +73,7 @@ export function LessonGrid({
   return (
     <View style={styles.grid}>
       {items.map((item) => (
-        <View key={item.title} style={styles.gridItem}>
+        <View key={item.id ?? item.title} style={styles.gridItem}>
           <LessonCard
             item={item}
             icon={icon}

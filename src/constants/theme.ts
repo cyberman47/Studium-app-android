@@ -24,6 +24,7 @@ export const Colors = {
     primary: '#0F8B8D', // Studium teal — icons, badges, links, secondary CTAs
     primaryMuted: '#E6F4F1', // teal-tinted card/badge background
     accent: '#047857', // primary CTA buttons ("Resume", "Start Studying")
+    accentMuted: '#D1FAE5', // emerald-tinted badge/bar background — a third brand tone, distinct from both primary's teal and amber's streak/flame association
 
     // Status
     amber: '#D97706', // streak/flame
@@ -47,6 +48,7 @@ export const Colors = {
     primary: '#2DD4BF', // teal-400 — lighter than light-mode primary for contrast on near-black
     primaryMuted: 'rgba(15, 139, 141, 0.16)',
     accent: '#34D399', // emerald-400
+    accentMuted: 'rgba(52, 211, 153, 0.18)',
 
     amber: '#FBBF24',
     amberMuted: 'rgba(217, 119, 6, 0.16)',

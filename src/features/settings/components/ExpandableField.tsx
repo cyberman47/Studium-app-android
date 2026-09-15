@@ -21,12 +21,16 @@ import { useTheme } from '@/hooks/use-theme';
 export function ExpandableField({
   title,
   summary,
+  summaryColor,
   children,
   disabled = false,
   defaultExpanded = false,
 }: {
   title: string;
   summary: string;
+  // Overrides the summary's default muted color — e.g. Study Path colors
+  // it to match the currently selected path instead of plain textSecondary.
+  summaryColor?: string;
   children: React.ReactNode;
   disabled?: boolean;
   defaultExpanded?: boolean;
@@ -62,7 +66,10 @@ export function ExpandableField({
         style={styles.header}>
         <View style={styles.textCol}>
           <ThemedText style={styles.title}>{title}</ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.summary} numberOfLines={1}>
+          <ThemedText
+            themeColor={summaryColor ? undefined : 'textSecondary'}
+            style={[styles.summary, summaryColor ? { color: summaryColor } : null]}
+            numberOfLines={1}>
             {summary}
           </ThemedText>
         </View>

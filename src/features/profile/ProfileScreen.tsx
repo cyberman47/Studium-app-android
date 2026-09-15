@@ -148,7 +148,6 @@ export function ProfileScreen() {
             avatarColor={editable.avatarColor}
             bio={editable.bio}
             pathLabel={data.pathLabel}
-            pathEmoji={data.pathEmoji}
             level={data.level}
             levelName={data.levelName}
             joinedLabel={data.joinedLabel}
