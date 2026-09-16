@@ -97,7 +97,11 @@ export function useRealDashboardStats(): { loading: boolean; stats: RealDashboar
           .select('name, total_kp, current_streak, education_track, week_start, kp_at_week_start, created_at')
           .eq('id', userId)
           .maybeSingle(),
-        supabase.from('leaderboard').select('id, name, total_kp, current_streak').order('total_kp', { ascending: false }).limit(1),
+        // public.leaderboard was replaced by the get_leaderboard() RPC
+        // function (0032_fix_leaderboard_security_definer.sql in the
+        // shared studium-website Supabase project) — already sorted by
+        // total_kp desc, so the top row is just the first element.
+        supabase.rpc('get_leaderboard'),
       ]);
       if (cancelled) return;
 
