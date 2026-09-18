@@ -64,7 +64,7 @@ export function AnatomyQuizScreen({ sectionIds }: { sectionIds: string[] }) {
   const theme = useTheme();
   const router = useRouter();
   const progress = useAnatomyProgress();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   // Built once per mount — a re-render must never reshuffle mid-session.
   const session = useMemo(() => buildSession(sectionIds), [sectionIds]);
@@ -175,9 +175,13 @@ export function AnatomyQuizScreen({ sectionIds }: { sectionIds: string[] }) {
 
   // Shared between the question view and the teaching slide — same image,
   // same zoom control — so the intro isn't a second, drifting copy.
-  // Square, because every source illustration is 1024×1024; sized off the
-  // real screen width so it stays genuinely big without overflowing.
-  const imageSize = Math.min(width - Spacing.four * 2 - 24, 420);
+  // Square, because every source illustration is 1024×1024. Kept
+  // deliberately compact (capped by screen height, not just width) so the
+  // question and all four options land on screen together — answering a
+  // card was requiring a scroll before this, which defeated the point of a
+  // quick-recall drill. Anyone who wants the full-size picture still has
+  // the zoom button/tap-to-zoom.
+  const imageSize = Math.min(width - Spacing.three * 2 - 20, height * 0.22, 190);
   const imagePanel = (
     <View style={[styles.panel, Shadow.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       {card.imageUrl ? (
@@ -456,9 +460,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   body: {
-    padding: Spacing.four,
-    paddingTop: Spacing.three,
-    gap: 14,
+    padding: Spacing.three,
+    paddingTop: Spacing.two,
+    gap: 10,
     alignItems: 'center',
   },
   panel: {
@@ -466,10 +470,10 @@ const styles = StyleSheet.create({
     maxWidth: 800,
     borderRadius: Radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    padding: 12,
+    padding: 10,
   },
   textPanel: {
-    padding: 18,
+    padding: 14,
   },
   imageWrap: {
     alignItems: 'center',
@@ -496,7 +500,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
     padding: 16,
-    minHeight: 140,
+    minHeight: 110,
   },
   noImageIcon: {
     width: 36,
@@ -533,13 +537,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   question: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 22,
     fontWeight: '700',
   },
   options: {
-    gap: 10,
-    paddingVertical: 16,
+    gap: 8,
+    paddingVertical: 10,
   },
   option: {
     flexDirection: 'row',
@@ -548,9 +552,9 @@ const styles = StyleSheet.create({
     gap: 10,
     borderRadius: Radius.lg,
     borderWidth: 2,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    minHeight: 52,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 44,
   },
   optionLeft: {
     flexDirection: 'row',
@@ -573,17 +577,17 @@ const styles = StyleSheet.create({
   },
   optionText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 18,
     fontWeight: '700',
   },
   dim: {
     opacity: 0.55,
   },
   explanation: {
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 6,
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 4,
     paddingHorizontal: 4,
   },
   celebration: {
@@ -625,7 +629,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 14,
+    paddingTop: 10,
+    marginTop: 2,
   },
   progressTrack: {
     flex: 1,

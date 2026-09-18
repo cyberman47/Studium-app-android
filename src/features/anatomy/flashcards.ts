@@ -1,23 +1,37 @@
-// Anatomy flashcard sections — a verbatim copy of the web app's
-// lib/anatomyFlashcards.ts (studium-website), one card per term from the
-// "Anatomy Studium Checklist". Kept byte-for-byte identical in content so
-// the phone and the website test the exact same cards with the exact same
-// four-option answer sets (the option order per card was seeded there and
-// must stay stable across both apps).
+// Anatomy flashcard sections — one card per term from the "Anatomy
+// Studium Checklist", originally a verbatim copy of the web app's
+// lib/anatomyFlashcards.ts (studium-website). Cards that have no matching
+// image anywhere have been pruned entirely rather than shown with a
+// text-only fallback — every remaining card here has a real image.
 //
-// `imageUrl` is the same site-relative path the web uses ("/images/
-// anatomy/..."); the phone resolves it against the deployed website at
-// render time (see anatomyImageUri) rather than bundling the ~65 MB of
-// PNGs into the APK. A card with no imageUrl shows its text definition as
-// the prompt instead, same fallback as the web.
+// The "anatomy-images" Supabase Storage bucket is the actual source of
+// truth for coverage, not the website: it holds 120 files across
+// bones/ (96), positional/ (12), movements/ (5), basic-anatomy/ (3),
+// planes/ (3), and one root file — a superset of what studium-website's
+// public/images/anatomy folder has (that one only has bones/ + positional/
+// + the root file). The anon Supabase key can't list bucket contents
+// (no SELECT policy on storage.objects for listing — list() silently
+// returns [] regardless of page size), so coverage was confirmed by
+// probing known/guessed paths' public URLs directly.
 //
-// When the web file changes, re-copy everything from `export type
-// AnatomyFlashcard` down — nothing below this header is hand-edited.
+// `imageUrl` is a "/images/anatomy/<folder>/<file>.png" path (same shape
+// the web app's data uses); anatomyImageUri resolves it against the
+// "anatomy-images" public Supabase Storage bucket (same project as
+// src/lib/supabase.ts) rather than the deployed website, so the phone
+// doesn't depend on the website's own hosting for these images.
+//
+// When re-syncing new terms from the web file, re-copy everything from
+// `export type AnatomyFlashcard` down, then re-run the same prune (drop
+// any card whose imageUrl has no matching object in the Supabase bucket)
+// before shipping.
 
-import { WEBSITE_URL } from '@/lib/config';
+import { supabase } from '@/lib/supabase';
+
+const ANATOMY_IMAGES_BUCKET = 'anatomy-images';
 
 export function anatomyImageUri(imageUrl: string): string {
-  return `${WEBSITE_URL}${imageUrl}`;
+  const path = imageUrl.replace(/^\/images\/anatomy\//, '');
+  return supabase.storage.from(ANATOMY_IMAGES_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 export type AnatomyFlashcard = {
@@ -226,44 +240,6 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
         "imageUrl": "/images/anatomy/positional/distal.png"
       },
       {
-        "id": "af-terminology-directional-terms-superficial",
-        "term": "Superficial",
-        "prompt": "Positioned closer to the body's surface.",
-        "concept": "Directional Terms",
-        "options": [
-          "Superficial",
-          "Deep",
-          "Ipsilateral",
-          "Proximal"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Superficial.",
-          "Incorrect—the structure described is the Superficial, not the Deep.",
-          "Incorrect—the structure described is the Superficial, not the Ipsilateral.",
-          "Incorrect—the structure described is the Superficial, not the Proximal."
-        ]
-      },
-      {
-        "id": "af-terminology-directional-terms-deep",
-        "term": "Deep",
-        "prompt": "Positioned farther from the body's surface, toward the interior.",
-        "concept": "Directional Terms",
-        "options": [
-          "Superficial",
-          "Contralateral",
-          "Deep",
-          "Distal"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Deep, not the Superficial.",
-          "Incorrect—the structure described is the Deep, not the Contralateral.",
-          "Correct—this is the Deep.",
-          "Incorrect—the structure described is the Deep, not the Distal."
-        ]
-      },
-      {
         "id": "af-terminology-directional-terms-internal",
         "term": "Internal",
         "prompt": "Positioned inside a body cavity or structure.",
@@ -360,26 +336,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Sagittal, not the Oblique.",
           "Incorrect—the structure described is the Sagittal, not the Midsagittal.",
           "Correct—this is the Sagittal."
-        ]
-      },
-      {
-        "id": "af-terminology-planes-midsagittal",
-        "term": "Midsagittal",
-        "prompt": "The sagittal plane passing through the body's midline, dividing it into equal right and left halves.",
-        "concept": "Planes",
-        "options": [
-          "Midsagittal",
-          "Transverse",
-          "Coronal",
-          "Sagittal"
         ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Midsagittal.",
-          "Incorrect—the structure described is the Midsagittal, not the Transverse.",
-          "Incorrect—the structure described is the Midsagittal, not the Coronal.",
-          "Incorrect—the structure described is the Midsagittal, not the Sagittal."
-        ]
+        "imageUrl": "/images/anatomy/planes/sagittal.png"
       },
       {
         "id": "af-terminology-planes-coronal",
@@ -398,7 +356,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Coronal, not the Oblique.",
           "Correct—this is the Coronal.",
           "Incorrect—the structure described is the Coronal, not the Midsagittal."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/planes/coronal.png"
       },
       {
         "id": "af-terminology-planes-transverse",
@@ -417,64 +376,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Transverse, not the Coronal.",
           "Incorrect—the structure described is the Transverse, not the Oblique.",
           "Incorrect—the structure described is the Transverse, not the Sagittal."
-        ]
-      },
-      {
-        "id": "af-terminology-planes-oblique",
-        "term": "Oblique",
-        "prompt": "A plane that cuts through the body at an angle other than sagittal, coronal, or transverse.",
-        "concept": "Planes",
-        "options": [
-          "Midsagittal",
-          "Sagittal",
-          "Oblique",
-          "Transverse"
         ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Oblique, not the Midsagittal.",
-          "Incorrect—the structure described is the Oblique, not the Sagittal.",
-          "Correct—this is the Oblique.",
-          "Incorrect—the structure described is the Oblique, not the Transverse."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-flexion",
-        "term": "Flexion",
-        "prompt": "Decreasing the angle between two body parts at a joint, typically bending a limb.",
-        "concept": "Movements",
-        "options": [
-          "Flexion",
-          "Supination",
-          "Extension",
-          "Adduction"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Flexion.",
-          "Incorrect—the structure described is the Flexion, not the Supination.",
-          "Incorrect—the structure described is the Flexion, not the Extension.",
-          "Incorrect—the structure described is the Flexion, not the Adduction."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-extension",
-        "term": "Extension",
-        "prompt": "Increasing the angle between two body parts at a joint, typically straightening a limb.",
-        "concept": "Movements",
-        "options": [
-          "External rotation",
-          "Flexion",
-          "Abduction",
-          "Extension"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Extension, not the External rotation.",
-          "Incorrect—the structure described is the Extension, not the Flexion.",
-          "Incorrect—the structure described is the Extension, not the Abduction.",
-          "Correct—this is the Extension."
-        ]
+        "imageUrl": "/images/anatomy/planes/transverse.png"
       },
       {
         "id": "af-terminology-movements-abduction",
@@ -493,7 +396,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Abduction, not the Eversion.",
           "Correct—this is the Abduction.",
           "Incorrect—the structure described is the Abduction, not the Inversion."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/movements/abduction.png"
       },
       {
         "id": "af-terminology-movements-adduction",
@@ -512,83 +416,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Adduction.",
           "Incorrect—the structure described is the Adduction, not the External rotation.",
           "Incorrect—the structure described is the Adduction, not the Supination."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-internal-rotation",
-        "term": "Internal rotation",
-        "prompt": "Rotating a limb around its long axis toward the body's midline.",
-        "concept": "Movements",
-        "options": [
-          "Inversion",
-          "Eversion",
-          "Internal rotation",
-          "Adduction"
         ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Internal rotation, not the Inversion.",
-          "Incorrect—the structure described is the Internal rotation, not the Eversion.",
-          "Correct—this is the Internal rotation.",
-          "Incorrect—the structure described is the Internal rotation, not the Adduction."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-external-rotation",
-        "term": "External rotation",
-        "prompt": "Rotating a limb around its long axis away from the body's midline.",
-        "concept": "Movements",
-        "options": [
-          "External rotation",
-          "Inversion",
-          "Flexion",
-          "Supination"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the External rotation.",
-          "Incorrect—the structure described is the External rotation, not the Inversion.",
-          "Incorrect—the structure described is the External rotation, not the Flexion.",
-          "Incorrect—the structure described is the External rotation, not the Supination."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-pronation",
-        "term": "Pronation",
-        "prompt": "Rotating the forearm so the palm faces posteriorly or downward.",
-        "concept": "Movements",
-        "options": [
-          "Pronation",
-          "Opposition",
-          "Inversion",
-          "External rotation"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Pronation.",
-          "Incorrect—the structure described is the Pronation, not the Opposition.",
-          "Incorrect—the structure described is the Pronation, not the Inversion.",
-          "Incorrect—the structure described is the Pronation, not the External rotation."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-supination",
-        "term": "Supination",
-        "prompt": "Rotating the forearm so the palm faces anteriorly or upward.",
-        "concept": "Movements",
-        "options": [
-          "Dorsiflexion",
-          "Plantarflexion",
-          "Extension",
-          "Supination"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Supination, not the Dorsiflexion.",
-          "Incorrect—the structure described is the Supination, not the Plantarflexion.",
-          "Incorrect—the structure described is the Supination, not the Extension.",
-          "Correct—this is the Supination."
-        ]
+        "imageUrl": "/images/anatomy/movements/adduction.png"
       },
       {
         "id": "af-terminology-movements-dorsiflexion",
@@ -607,7 +436,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Dorsiflexion, not the Abduction.",
           "Incorrect—the structure described is the Dorsiflexion, not the Inversion.",
           "Correct—this is the Dorsiflexion."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/movements/dorsiflexion.png"
       },
       {
         "id": "af-terminology-movements-plantarflexion",
@@ -626,26 +456,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Plantarflexion.",
           "Incorrect—the structure described is the Plantarflexion, not the Supination.",
           "Incorrect—the structure described is the Plantarflexion, not the Pronation."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-inversion",
-        "term": "Inversion",
-        "prompt": "Tilting the sole of the foot inward, toward the midline.",
-        "concept": "Movements",
-        "options": [
-          "Supination",
-          "Inversion",
-          "Plantarflexion",
-          "Flexion"
         ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Inversion, not the Supination.",
-          "Correct—this is the Inversion.",
-          "Incorrect—the structure described is the Inversion, not the Plantarflexion.",
-          "Incorrect—the structure described is the Inversion, not the Flexion."
-        ]
+        "imageUrl": "/images/anatomy/movements/plantarflexion.png"
       },
       {
         "id": "af-terminology-movements-eversion",
@@ -664,64 +476,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Eversion, not the Opposition.",
           "Incorrect—the structure described is the Eversion, not the Plantarflexion.",
           "Correct—this is the Eversion."
-        ]
-      },
-      {
-        "id": "af-terminology-movements-opposition",
-        "term": "Opposition",
-        "prompt": "Bringing the thumb into contact with the fingertips, a movement unique to the thumb's saddle joint.",
-        "concept": "Movements",
-        "options": [
-          "Supination",
-          "Internal rotation",
-          "Opposition",
-          "Dorsiflexion"
         ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Opposition, not the Supination.",
-          "Incorrect—the structure described is the Opposition, not the Internal rotation.",
-          "Correct—this is the Opposition.",
-          "Incorrect—the structure described is the Opposition, not the Dorsiflexion."
-        ]
-      },
-      {
-        "id": "af-terminology-basic-anatomy-bone",
-        "term": "Bone",
-        "prompt": "A rigid connective tissue that forms the skeleton and provides structural support and attachment points for muscles.",
-        "concept": "Basic Anatomy",
-        "options": [
-          "Bone",
-          "Fascia",
-          "Ligament",
-          "Joint"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Bone.",
-          "Incorrect—the structure described is the Bone, not the Fascia.",
-          "Incorrect—the structure described is the Bone, not the Ligament.",
-          "Incorrect—the structure described is the Bone, not the Joint."
-        ]
-      },
-      {
-        "id": "af-terminology-basic-anatomy-joint",
-        "term": "Joint",
-        "prompt": "The junction between two or more bones where movement or support occurs.",
-        "concept": "Basic Anatomy",
-        "options": [
-          "Bone",
-          "Ligament",
-          "Tendon",
-          "Joint"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Joint, not the Bone.",
-          "Incorrect—the structure described is the Joint, not the Ligament.",
-          "Incorrect—the structure described is the Joint, not the Tendon.",
-          "Correct—this is the Joint."
-        ]
+        "imageUrl": "/images/anatomy/movements/eversion.png"
       },
       {
         "id": "af-terminology-basic-anatomy-ligament",
@@ -740,7 +496,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Ligament, not the Joint.",
           "Correct—this is the Ligament.",
           "Incorrect—the structure described is the Ligament, not the Cartilage."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/basic-anatomy/ligament.png"
       },
       {
         "id": "af-terminology-basic-anatomy-tendon",
@@ -759,7 +516,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Tendon, not the Fascia.",
           "Correct—this is the Tendon.",
           "Incorrect—the structure described is the Tendon, not the Cartilage."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/basic-anatomy/tendon.png"
       },
       {
         "id": "af-terminology-basic-anatomy-cartilage",
@@ -778,26 +536,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Cartilage, not the Bone.",
           "Incorrect—the structure described is the Cartilage, not the Joint.",
           "Correct—this is the Cartilage."
-        ]
-      },
-      {
-        "id": "af-terminology-basic-anatomy-fascia",
-        "term": "Fascia",
-        "prompt": "A sheet of fibrous connective tissue that surrounds and separates muscles and organs.",
-        "concept": "Basic Anatomy",
-        "options": [
-          "Ligament",
-          "Bone",
-          "Tendon",
-          "Fascia"
         ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Fascia, not the Ligament.",
-          "Incorrect—the structure described is the Fascia, not the Bone.",
-          "Incorrect—the structure described is the Fascia, not the Tendon.",
-          "Correct—this is the Fascia."
-        ]
+        "imageUrl": "/images/anatomy/basic-anatomy/cartilage.png"
       }
     ]
   },
@@ -857,7 +597,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Spine (of scapula), not the Coracoid process.",
           "Incorrect—the structure described is the Spine (of scapula), not the Acromion.",
           "Incorrect—the structure described is the Spine (of scapula), not the Supraspinous fossa."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/scapula-spine-of-scapula.png"
       },
       {
         "id": "af-upper-limb-scapula-acromion",
@@ -976,7 +717,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Humerus, not the Trochlea.",
           "Incorrect—the structure described is the Humerus, not the Greater tubercle.",
           "Correct—this is the Humerus."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus.png"
       },
       {
         "id": "af-upper-limb-humerus-head-of-humerus",
@@ -995,7 +737,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Head (of humerus).",
           "Incorrect—the structure described is the Head (of humerus), not the Intertubercular groove.",
           "Incorrect—the structure described is the Head (of humerus), not the Capitulum."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-head-of-humerus.png"
       },
       {
         "id": "af-upper-limb-humerus-greater-tubercle",
@@ -1014,7 +757,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Greater tubercle, not the Lateral epicondyle.",
           "Incorrect—the structure described is the Greater tubercle, not the Humerus.",
           "Incorrect—the structure described is the Greater tubercle, not the Capitulum."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-greater-tubercle.png"
       },
       {
         "id": "af-upper-limb-humerus-lesser-tubercle",
@@ -1033,7 +777,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Lesser tubercle, not the Humerus.",
           "Incorrect—the structure described is the Lesser tubercle, not the Trochlea.",
           "Incorrect—the structure described is the Lesser tubercle, not the Surgical neck."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-lesser-tubercle.png"
       },
       {
         "id": "af-upper-limb-humerus-intertubercular-groove",
@@ -1052,7 +797,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Intertubercular groove.",
           "Incorrect—the structure described is the Intertubercular groove, not the Humerus.",
           "Incorrect—the structure described is the Intertubercular groove, not the Anatomical neck."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-intertubercular-groove.png"
       },
       {
         "id": "af-upper-limb-humerus-surgical-neck",
@@ -1071,7 +817,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Surgical neck, not the Capitulum.",
           "Incorrect—the structure described is the Surgical neck, not the Greater tubercle.",
           "Incorrect—the structure described is the Surgical neck, not the Anatomical neck."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-surgical-neck.png"
       },
       {
         "id": "af-upper-limb-humerus-anatomical-neck",
@@ -1090,7 +837,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Anatomical neck, not the Trochlea.",
           "Incorrect—the structure described is the Anatomical neck, not the Greater tubercle.",
           "Incorrect—the structure described is the Anatomical neck, not the Humerus."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-anatomical-neck.png"
       },
       {
         "id": "af-upper-limb-humerus-capitulum",
@@ -1109,7 +857,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Capitulum, not the Lateral epicondyle.",
           "Incorrect—the structure described is the Capitulum, not the Greater tubercle.",
           "Incorrect—the structure described is the Capitulum, not the Medial epicondyle."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-capitulum.png"
       },
       {
         "id": "af-upper-limb-humerus-trochlea",
@@ -1128,7 +877,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Trochlea.",
           "Incorrect—the structure described is the Trochlea, not the Head (of humerus).",
           "Incorrect—the structure described is the Trochlea, not the Greater tubercle."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-trochlea.png"
       },
       {
         "id": "af-upper-limb-humerus-medial-epicondyle",
@@ -1147,7 +897,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Medial epicondyle.",
           "Incorrect—the structure described is the Medial epicondyle, not the Trochlea.",
           "Incorrect—the structure described is the Medial epicondyle, not the Lateral epicondyle."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-medial-epicondyle.png"
       },
       {
         "id": "af-upper-limb-humerus-lateral-epicondyle",
@@ -1166,7 +917,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Lateral epicondyle, not the Lesser tubercle.",
           "Correct—this is the Lateral epicondyle.",
           "Incorrect—the structure described is the Lateral epicondyle, not the Trochlea."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/humerus-lateral-epicondyle.png"
       },
       {
         "id": "af-upper-limb-forearm-radius",
@@ -1185,7 +937,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Radius, not the Ulna.",
           "Incorrect—the structure described is the Radius, not the Coronoid process.",
           "Correct—this is the Radius."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/radius.png"
       },
       {
         "id": "af-upper-limb-forearm-ulna",
@@ -1204,7 +957,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Ulna, not the Coronoid process.",
           "Incorrect—the structure described is the Ulna, not the Olecranon.",
           "Correct—this is the Ulna."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/ulna.png"
       },
       {
         "id": "af-upper-limb-forearm-radial-head",
@@ -1223,7 +977,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Radial head, not the Coronoid process.",
           "Correct—this is the Radial head.",
           "Incorrect—the structure described is the Radial head, not the Ulna."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/radius-radial-head.png"
       },
       {
         "id": "af-upper-limb-forearm-radial-tuberosity",
@@ -1242,26 +997,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Radial tuberosity.",
           "Incorrect—the structure described is the Radial tuberosity, not the Styloid processes.",
           "Incorrect—the structure described is the Radial tuberosity, not the Olecranon."
-        ]
-      },
-      {
-        "id": "af-upper-limb-forearm-olecranon",
-        "term": "Olecranon",
-        "prompt": "The proximal projection of the ulna that forms the point of the elbow.",
-        "concept": "Forearm",
-        "options": [
-          "Olecranon",
-          "Styloid processes",
-          "Ulna",
-          "Coronoid process"
         ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Olecranon.",
-          "Incorrect—the structure described is the Olecranon, not the Styloid processes.",
-          "Incorrect—the structure described is the Olecranon, not the Ulna.",
-          "Incorrect—the structure described is the Olecranon, not the Coronoid process."
-        ]
+        "imageUrl": "/images/anatomy/bones/radius-radial-tuberosity.png"
       },
       {
         "id": "af-upper-limb-forearm-coronoid-process",
@@ -1280,26 +1017,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Coronoid process.",
           "Incorrect—the structure described is the Coronoid process, not the Ulna.",
           "Incorrect—the structure described is the Coronoid process, not the Olecranon."
-        ]
-      },
-      {
-        "id": "af-upper-limb-forearm-styloid-processes",
-        "term": "Styloid processes",
-        "prompt": "Pointed projections at the distal ends of the radius and ulna near the wrist.",
-        "concept": "Forearm",
-        "options": [
-          "Radial tuberosity",
-          "Radial head",
-          "Styloid processes",
-          "Coronoid process"
         ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Styloid processes, not the Radial tuberosity.",
-          "Incorrect—the structure described is the Styloid processes, not the Radial head.",
-          "Correct—this is the Styloid processes.",
-          "Incorrect—the structure described is the Styloid processes, not the Coronoid process."
-        ]
+        "imageUrl": "/images/anatomy/bones/ulna-coronoid-process.png"
       }
     ]
   },
@@ -1403,7 +1122,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Pubis, not the Hip bone.",
           "Correct—this is the Pubis.",
           "Incorrect—the structure described is the Pubis, not the Ilium."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/pelvic-pubis.png"
       },
       {
         "id": "af-lower-limb-pelvic-bones-acetabulum",
@@ -2111,44 +1831,6 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
         ]
       },
       {
-        "id": "af-spine-back-vertebra-anatomy-superior-articular-process",
-        "term": "Superior articular process",
-        "prompt": "A projection on a vertebra that forms a joint with the vertebra above it.",
-        "concept": "Vertebra Anatomy",
-        "options": [
-          "Vertebral foramen",
-          "Transverse process",
-          "Superior articular process",
-          "Inferior articular process"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Superior articular process, not the Vertebral foramen.",
-          "Incorrect—the structure described is the Superior articular process, not the Transverse process.",
-          "Correct—this is the Superior articular process.",
-          "Incorrect—the structure described is the Superior articular process, not the Inferior articular process."
-        ]
-      },
-      {
-        "id": "af-spine-back-vertebra-anatomy-inferior-articular-process",
-        "term": "Inferior articular process",
-        "prompt": "A projection on a vertebra that forms a joint with the vertebra below it.",
-        "concept": "Vertebra Anatomy",
-        "options": [
-          "Superior articular process",
-          "Transverse process",
-          "Vertebral foramen",
-          "Inferior articular process"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Inferior articular process, not the Superior articular process.",
-          "Incorrect—the structure described is the Inferior articular process, not the Transverse process.",
-          "Incorrect—the structure described is the Inferior articular process, not the Vertebral foramen.",
-          "Correct—this is the Inferior articular process."
-        ]
-      },
-      {
         "id": "af-spine-back-intervertebral-structures-intervertebral-disc",
         "imageUrl": "/images/anatomy/bones/vertabrae-intervertebral-disc.png",
         "term": "Intervertebral disc",
@@ -2258,18 +1940,6 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
       {
         "id": "thoracic-skeleton",
         "title": "Thoracic Skeleton"
-      },
-      {
-        "id": "heart",
-        "title": "Heart"
-      },
-      {
-        "id": "lungs",
-        "title": "Lungs"
-      },
-      {
-        "id": "airways-pleura",
-        "title": "Airways & Pleura"
       }
     ],
     "cards": [
@@ -2412,424 +2082,6 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Costal cartilage.",
           "Incorrect—the structure described is the Costal cartilage, not the Xiphoid process."
         ]
-      },
-      {
-        "id": "af-thorax-heart-heart",
-        "term": "Heart",
-        "prompt": "The muscular organ that pumps blood through the circulatory system, located in the mediastinum between the lungs.",
-        "concept": "Heart",
-        "options": [
-          "Superior vena cava",
-          "Left atrium",
-          "Aorta",
-          "Heart"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Heart, not the Superior vena cava.",
-          "Incorrect—the structure described is the Heart, not the Left atrium.",
-          "Incorrect—the structure described is the Heart, not the Aorta.",
-          "Correct—this is the Heart."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-right-atrium",
-        "term": "Right atrium",
-        "prompt": "The chamber that receives deoxygenated blood from the body via the venae cavae.",
-        "concept": "Heart",
-        "options": [
-          "Left atrium",
-          "Right atrium",
-          "Pulmonary trunk",
-          "Aorta"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Right atrium, not the Left atrium.",
-          "Correct—this is the Right atrium.",
-          "Incorrect—the structure described is the Right atrium, not the Pulmonary trunk.",
-          "Incorrect—the structure described is the Right atrium, not the Aorta."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-right-ventricle",
-        "term": "Right ventricle",
-        "prompt": "The chamber that pumps deoxygenated blood into the pulmonary trunk toward the lungs.",
-        "concept": "Heart",
-        "options": [
-          "Pulmonary trunk",
-          "Right ventricle",
-          "Heart",
-          "Pulmonary veins"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Right ventricle, not the Pulmonary trunk.",
-          "Correct—this is the Right ventricle.",
-          "Incorrect—the structure described is the Right ventricle, not the Heart.",
-          "Incorrect—the structure described is the Right ventricle, not the Pulmonary veins."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-left-atrium",
-        "term": "Left atrium",
-        "prompt": "The chamber that receives oxygenated blood from the lungs via the pulmonary veins.",
-        "concept": "Heart",
-        "options": [
-          "Pulmonary trunk",
-          "Superior vena cava",
-          "Left atrium",
-          "Mitral valve"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Left atrium, not the Pulmonary trunk.",
-          "Incorrect—the structure described is the Left atrium, not the Superior vena cava.",
-          "Correct—this is the Left atrium.",
-          "Incorrect—the structure described is the Left atrium, not the Mitral valve."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-left-ventricle",
-        "term": "Left ventricle",
-        "prompt": "The thick-walled chamber that pumps oxygenated blood into the aorta to the rest of the body.",
-        "concept": "Heart",
-        "options": [
-          "Left atrium",
-          "Heart",
-          "Left ventricle",
-          "Pulmonary veins"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Left ventricle, not the Left atrium.",
-          "Incorrect—the structure described is the Left ventricle, not the Heart.",
-          "Correct—this is the Left ventricle.",
-          "Incorrect—the structure described is the Left ventricle, not the Pulmonary veins."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-aorta",
-        "term": "Aorta",
-        "prompt": "The largest artery in the body, carrying oxygenated blood from the left ventricle to the systemic circulation.",
-        "concept": "Heart",
-        "options": [
-          "Right ventricle",
-          "Right atrium",
-          "Pulmonary trunk",
-          "Aorta"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Aorta, not the Right ventricle.",
-          "Incorrect—the structure described is the Aorta, not the Right atrium.",
-          "Incorrect—the structure described is the Aorta, not the Pulmonary trunk.",
-          "Correct—this is the Aorta."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-pulmonary-trunk",
-        "term": "Pulmonary trunk",
-        "prompt": "The large artery that carries deoxygenated blood from the right ventricle toward the lungs.",
-        "concept": "Heart",
-        "options": [
-          "Pulmonary trunk",
-          "Right atrium",
-          "Mitral valve",
-          "Left ventricle"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Pulmonary trunk.",
-          "Incorrect—the structure described is the Pulmonary trunk, not the Right atrium.",
-          "Incorrect—the structure described is the Pulmonary trunk, not the Mitral valve.",
-          "Incorrect—the structure described is the Pulmonary trunk, not the Left ventricle."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-superior-vena-cava",
-        "term": "Superior vena cava",
-        "prompt": "The large vein that returns deoxygenated blood from the head, neck, and upper limbs to the right atrium.",
-        "concept": "Heart",
-        "options": [
-          "Tricuspid valve",
-          "Pulmonary trunk",
-          "Right atrium",
-          "Superior vena cava"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Superior vena cava, not the Tricuspid valve.",
-          "Incorrect—the structure described is the Superior vena cava, not the Pulmonary trunk.",
-          "Incorrect—the structure described is the Superior vena cava, not the Right atrium.",
-          "Correct—this is the Superior vena cava."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-pulmonary-veins",
-        "term": "Pulmonary veins",
-        "prompt": "The vessels that carry oxygenated blood from the lungs to the left atrium.",
-        "concept": "Heart",
-        "options": [
-          "Pulmonary veins",
-          "Heart",
-          "Left atrium",
-          "Right atrium"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Pulmonary veins.",
-          "Incorrect—the structure described is the Pulmonary veins, not the Heart.",
-          "Incorrect—the structure described is the Pulmonary veins, not the Left atrium.",
-          "Incorrect—the structure described is the Pulmonary veins, not the Right atrium."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-tricuspid-valve",
-        "term": "Tricuspid valve",
-        "prompt": "The three-cusped valve between the right atrium and right ventricle.",
-        "concept": "Heart",
-        "options": [
-          "Tricuspid valve",
-          "Heart",
-          "Mitral valve",
-          "Left atrium"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Tricuspid valve.",
-          "Incorrect—the structure described is the Tricuspid valve, not the Heart.",
-          "Incorrect—the structure described is the Tricuspid valve, not the Mitral valve.",
-          "Incorrect—the structure described is the Tricuspid valve, not the Left atrium."
-        ]
-      },
-      {
-        "id": "af-thorax-heart-mitral-valve",
-        "term": "Mitral valve",
-        "prompt": "The two-cusped valve between the left atrium and left ventricle.",
-        "concept": "Heart",
-        "options": [
-          "Left ventricle",
-          "Right ventricle",
-          "Superior vena cava",
-          "Mitral valve"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Mitral valve, not the Left ventricle.",
-          "Incorrect—the structure described is the Mitral valve, not the Right ventricle.",
-          "Incorrect—the structure described is the Mitral valve, not the Superior vena cava.",
-          "Correct—this is the Mitral valve."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-right-lung",
-        "term": "Right lung",
-        "prompt": "The lung on the right side of the thorax, divided into three lobes and slightly larger than the left.",
-        "concept": "Lungs",
-        "options": [
-          "Middle lobe",
-          "Left lung",
-          "Superior lobe",
-          "Right lung"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Right lung, not the Middle lobe.",
-          "Incorrect—the structure described is the Right lung, not the Left lung.",
-          "Incorrect—the structure described is the Right lung, not the Superior lobe.",
-          "Correct—this is the Right lung."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-left-lung",
-        "term": "Left lung",
-        "prompt": "The lung on the left side of the thorax, divided into two lobes to accommodate the heart.",
-        "concept": "Lungs",
-        "options": [
-          "Right lung",
-          "Inferior lobe",
-          "Left lung",
-          "Middle lobe"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Left lung, not the Right lung.",
-          "Incorrect—the structure described is the Left lung, not the Inferior lobe.",
-          "Correct—this is the Left lung.",
-          "Incorrect—the structure described is the Left lung, not the Middle lobe."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-superior-lobe",
-        "term": "Superior lobe",
-        "prompt": "The uppermost lobe of a lung.",
-        "concept": "Lungs",
-        "options": [
-          "Hilum",
-          "Inferior lobe",
-          "Superior lobe",
-          "Right lung"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Superior lobe, not the Hilum.",
-          "Incorrect—the structure described is the Superior lobe, not the Inferior lobe.",
-          "Correct—this is the Superior lobe.",
-          "Incorrect—the structure described is the Superior lobe, not the Right lung."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-middle-lobe",
-        "term": "Middle lobe",
-        "prompt": "The lobe found only in the right lung, between the superior and inferior lobes.",
-        "concept": "Lungs",
-        "options": [
-          "Right lung",
-          "Hilum",
-          "Middle lobe",
-          "Inferior lobe"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Middle lobe, not the Right lung.",
-          "Incorrect—the structure described is the Middle lobe, not the Hilum.",
-          "Correct—this is the Middle lobe.",
-          "Incorrect—the structure described is the Middle lobe, not the Inferior lobe."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-inferior-lobe",
-        "term": "Inferior lobe",
-        "prompt": "The lowermost lobe of a lung.",
-        "concept": "Lungs",
-        "options": [
-          "Inferior lobe",
-          "Superior lobe",
-          "Hilum",
-          "Left lung"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Inferior lobe.",
-          "Incorrect—the structure described is the Inferior lobe, not the Superior lobe.",
-          "Incorrect—the structure described is the Inferior lobe, not the Hilum.",
-          "Incorrect—the structure described is the Inferior lobe, not the Left lung."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-lingula",
-        "term": "Lingula",
-        "prompt": "A tongue-shaped projection of the left lung's superior lobe, functionally similar to the right lung's middle lobe.",
-        "concept": "Lungs",
-        "options": [
-          "Lingula",
-          "Left lung",
-          "Middle lobe",
-          "Inferior lobe"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Lingula.",
-          "Incorrect—the structure described is the Lingula, not the Left lung.",
-          "Incorrect—the structure described is the Lingula, not the Middle lobe.",
-          "Incorrect—the structure described is the Lingula, not the Inferior lobe."
-        ]
-      },
-      {
-        "id": "af-thorax-lungs-hilum",
-        "term": "Hilum",
-        "prompt": "The region on the medial surface of each lung where the bronchi, vessels, and nerves enter and exit.",
-        "concept": "Lungs",
-        "options": [
-          "Right lung",
-          "Left lung",
-          "Lingula",
-          "Hilum"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Hilum, not the Right lung.",
-          "Incorrect—the structure described is the Hilum, not the Left lung.",
-          "Incorrect—the structure described is the Hilum, not the Lingula.",
-          "Correct—this is the Hilum."
-        ]
-      },
-      {
-        "id": "af-thorax-airways-pleura-trachea",
-        "term": "Trachea",
-        "prompt": "The cartilage-reinforced airway that connects the larynx to the main bronchi.",
-        "concept": "Airways & Pleura",
-        "options": [
-          "Pleura",
-          "Carina",
-          "Main bronchi",
-          "Trachea"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Trachea, not the Pleura.",
-          "Incorrect—the structure described is the Trachea, not the Carina.",
-          "Incorrect—the structure described is the Trachea, not the Main bronchi.",
-          "Correct—this is the Trachea."
-        ]
-      },
-      {
-        "id": "af-thorax-airways-pleura-carina",
-        "term": "Carina",
-        "prompt": "The ridge at the point where the trachea divides into the two main bronchi.",
-        "concept": "Airways & Pleura",
-        "options": [
-          "Pleura",
-          "Trachea",
-          "Carina",
-          "Main bronchi"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Carina, not the Pleura.",
-          "Incorrect—the structure described is the Carina, not the Trachea.",
-          "Correct—this is the Carina.",
-          "Incorrect—the structure described is the Carina, not the Main bronchi."
-        ]
-      },
-      {
-        "id": "af-thorax-airways-pleura-main-bronchi",
-        "term": "Main bronchi",
-        "prompt": "The two large airways that branch from the trachea, one entering each lung.",
-        "concept": "Airways & Pleura",
-        "options": [
-          "Main bronchi",
-          "Pleura",
-          "Trachea",
-          "Carina"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Main bronchi.",
-          "Incorrect—the structure described is the Main bronchi, not the Pleura.",
-          "Incorrect—the structure described is the Main bronchi, not the Trachea.",
-          "Incorrect—the structure described is the Main bronchi, not the Carina."
-        ]
-      },
-      {
-        "id": "af-thorax-airways-pleura-pleura",
-        "term": "Pleura",
-        "prompt": "The double-layered serous membrane that lines the thoracic cavity and covers each lung, reducing friction during breathing.",
-        "concept": "Airways & Pleura",
-        "options": [
-          "Trachea",
-          "Carina",
-          "Pleura",
-          "Main bronchi"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Pleura, not the Trachea.",
-          "Incorrect—the structure described is the Pleura, not the Carina.",
-          "Correct—this is the Pleura.",
-          "Incorrect—the structure described is the Pleura, not the Main bronchi."
-        ]
       }
     ]
   },
@@ -2839,551 +2091,11 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
     "description": "Abdominal organs, the kidneys, and the bones of the pelvis.",
     "groups": [
       {
-        "id": "abdominal-organs",
-        "title": "Abdominal Organs"
-      },
-      {
-        "id": "kidneys",
-        "title": "Kidneys"
-      },
-      {
         "id": "pelvis",
         "title": "Pelvis"
       }
     ],
     "cards": [
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-liver",
-        "term": "Liver",
-        "prompt": "The largest internal organ, located in the right upper abdomen, responsible for metabolism, detoxification, and bile production.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Liver",
-          "Appendix",
-          "Gallbladder",
-          "Sigmoid colon"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Liver.",
-          "Incorrect—the structure described is the Liver, not the Appendix.",
-          "Incorrect—the structure described is the Liver, not the Gallbladder.",
-          "Incorrect—the structure described is the Liver, not the Sigmoid colon."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-right-lobe",
-        "term": "Right lobe",
-        "prompt": "The larger of the liver's two main lobes, occupying most of the right upper abdomen.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Descending colon",
-          "Cecum",
-          "Right lobe",
-          "Appendix"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Right lobe, not the Descending colon.",
-          "Incorrect—the structure described is the Right lobe, not the Cecum.",
-          "Correct—this is the Right lobe.",
-          "Incorrect—the structure described is the Right lobe, not the Appendix."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-left-lobe",
-        "term": "Left lobe",
-        "prompt": "The smaller of the liver's two main lobes, extending toward the left upper abdomen.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Left lobe",
-          "Ileum",
-          "Appendix",
-          "Caudate lobe"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Left lobe.",
-          "Incorrect—the structure described is the Left lobe, not the Ileum.",
-          "Incorrect—the structure described is the Left lobe, not the Appendix.",
-          "Incorrect—the structure described is the Left lobe, not the Caudate lobe."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-caudate-lobe",
-        "term": "Caudate lobe",
-        "prompt": "A small lobe on the posterior surface of the liver, near the inferior vena cava.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Liver",
-          "Caudate lobe",
-          "Sigmoid colon",
-          "Ileum"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Caudate lobe, not the Liver.",
-          "Correct—this is the Caudate lobe.",
-          "Incorrect—the structure described is the Caudate lobe, not the Sigmoid colon.",
-          "Incorrect—the structure described is the Caudate lobe, not the Ileum."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-quadrate-lobe",
-        "term": "Quadrate lobe",
-        "prompt": "A small lobe on the inferior surface of the liver, near the gallbladder.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Left lobe",
-          "Right lobe",
-          "Quadrate lobe",
-          "Cecum"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Quadrate lobe, not the Left lobe.",
-          "Incorrect—the structure described is the Quadrate lobe, not the Right lobe.",
-          "Correct—this is the Quadrate lobe.",
-          "Incorrect—the structure described is the Quadrate lobe, not the Cecum."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-gallbladder",
-        "term": "Gallbladder",
-        "prompt": "A small sac beneath the liver that stores and concentrates bile before release into the duodenum.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Appendix",
-          "Caudate lobe",
-          "Transverse colon",
-          "Gallbladder"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Gallbladder, not the Appendix.",
-          "Incorrect—the structure described is the Gallbladder, not the Caudate lobe.",
-          "Incorrect—the structure described is the Gallbladder, not the Transverse colon.",
-          "Correct—this is the Gallbladder."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-stomach",
-        "term": "Stomach",
-        "prompt": "The J-shaped organ between the esophagus and duodenum where food is mixed with acid and enzymes.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Sigmoid colon",
-          "Stomach",
-          "Right lobe",
-          "Appendix"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Stomach, not the Sigmoid colon.",
-          "Correct—this is the Stomach.",
-          "Incorrect—the structure described is the Stomach, not the Right lobe.",
-          "Incorrect—the structure described is the Stomach, not the Appendix."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-pancreas",
-        "term": "Pancreas",
-        "prompt": "A gland behind the stomach that produces digestive enzymes and the hormones insulin and glucagon.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Right lobe",
-          "Pancreas",
-          "Appendix",
-          "Caudate lobe"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Pancreas, not the Right lobe.",
-          "Correct—this is the Pancreas.",
-          "Incorrect—the structure described is the Pancreas, not the Appendix.",
-          "Incorrect—the structure described is the Pancreas, not the Caudate lobe."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-spleen",
-        "term": "Spleen",
-        "prompt": "An organ in the left upper abdomen that filters blood and supports immune function.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Liver",
-          "Transverse colon",
-          "Right lobe",
-          "Spleen"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Spleen, not the Liver.",
-          "Incorrect—the structure described is the Spleen, not the Transverse colon.",
-          "Incorrect—the structure described is the Spleen, not the Right lobe.",
-          "Correct—this is the Spleen."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-duodenum",
-        "term": "Duodenum",
-        "prompt": "The first and shortest segment of the small intestine, receiving chyme from the stomach and secretions from the liver and pancreas.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Duodenum",
-          "Transverse colon",
-          "Spleen",
-          "Ascending colon"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Duodenum.",
-          "Incorrect—the structure described is the Duodenum, not the Transverse colon.",
-          "Incorrect—the structure described is the Duodenum, not the Spleen.",
-          "Incorrect—the structure described is the Duodenum, not the Ascending colon."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-jejunum",
-        "term": "Jejunum",
-        "prompt": "The middle segment of the small intestine, primarily responsible for nutrient absorption.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Sigmoid colon",
-          "Gallbladder",
-          "Jejunum",
-          "Cecum"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Jejunum, not the Sigmoid colon.",
-          "Incorrect—the structure described is the Jejunum, not the Gallbladder.",
-          "Correct—this is the Jejunum.",
-          "Incorrect—the structure described is the Jejunum, not the Cecum."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-ileum",
-        "term": "Ileum",
-        "prompt": "The final and longest segment of the small intestine, ending at the ileocecal valve.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Cecum",
-          "Sigmoid colon",
-          "Jejunum",
-          "Ileum"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Ileum, not the Cecum.",
-          "Incorrect—the structure described is the Ileum, not the Sigmoid colon.",
-          "Incorrect—the structure described is the Ileum, not the Jejunum.",
-          "Correct—this is the Ileum."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-cecum",
-        "term": "Cecum",
-        "prompt": "The pouch at the beginning of the large intestine, where the small intestine joins the colon.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Cecum",
-          "Stomach",
-          "Appendix",
-          "Quadrate lobe"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Cecum.",
-          "Incorrect—the structure described is the Cecum, not the Stomach.",
-          "Incorrect—the structure described is the Cecum, not the Appendix.",
-          "Incorrect—the structure described is the Cecum, not the Quadrate lobe."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-appendix",
-        "term": "Appendix",
-        "prompt": "A narrow, finger-like tube attached to the cecum, containing lymphoid tissue.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Ileum",
-          "Ascending colon",
-          "Spleen",
-          "Appendix"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Appendix, not the Ileum.",
-          "Incorrect—the structure described is the Appendix, not the Ascending colon.",
-          "Incorrect—the structure described is the Appendix, not the Spleen.",
-          "Correct—this is the Appendix."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-ascending-colon",
-        "term": "Ascending colon",
-        "prompt": "The segment of the large intestine that runs up the right side of the abdomen from the cecum.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Ascending colon",
-          "Ileum",
-          "Cecum",
-          "Descending colon"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Ascending colon.",
-          "Incorrect—the structure described is the Ascending colon, not the Ileum.",
-          "Incorrect—the structure described is the Ascending colon, not the Cecum.",
-          "Incorrect—the structure described is the Ascending colon, not the Descending colon."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-transverse-colon",
-        "term": "Transverse colon",
-        "prompt": "The segment of the large intestine that crosses the abdomen from right to left.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Descending colon",
-          "Transverse colon",
-          "Caudate lobe",
-          "Appendix"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Transverse colon, not the Descending colon.",
-          "Correct—this is the Transverse colon.",
-          "Incorrect—the structure described is the Transverse colon, not the Caudate lobe.",
-          "Incorrect—the structure described is the Transverse colon, not the Appendix."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-descending-colon",
-        "term": "Descending colon",
-        "prompt": "The segment of the large intestine that runs down the left side of the abdomen.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Sigmoid colon",
-          "Spleen",
-          "Descending colon",
-          "Pancreas"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Descending colon, not the Sigmoid colon.",
-          "Incorrect—the structure described is the Descending colon, not the Spleen.",
-          "Correct—this is the Descending colon.",
-          "Incorrect—the structure described is the Descending colon, not the Pancreas."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-sigmoid-colon",
-        "term": "Sigmoid colon",
-        "prompt": "The S-shaped segment of the large intestine that connects the descending colon to the rectum.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Right lobe",
-          "Sigmoid colon",
-          "Pancreas",
-          "Quadrate lobe"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Sigmoid colon, not the Right lobe.",
-          "Correct—this is the Sigmoid colon.",
-          "Incorrect—the structure described is the Sigmoid colon, not the Pancreas.",
-          "Incorrect—the structure described is the Sigmoid colon, not the Quadrate lobe."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-abdominal-organs-rectum",
-        "term": "Rectum",
-        "prompt": "The final straight segment of the large intestine, storing feces before elimination.",
-        "concept": "Abdominal Organs",
-        "options": [
-          "Rectum",
-          "Transverse colon",
-          "Pancreas",
-          "Quadrate lobe"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Rectum.",
-          "Incorrect—the structure described is the Rectum, not the Transverse colon.",
-          "Incorrect—the structure described is the Rectum, not the Pancreas.",
-          "Incorrect—the structure described is the Rectum, not the Quadrate lobe."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-kidney",
-        "term": "Kidney",
-        "prompt": "One of a pair of bean-shaped organs that filter blood to form urine and regulate fluid and electrolyte balance.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal artery",
-          "Renal vein",
-          "Kidney",
-          "Renal pyramid"
-        ],
-        "correctIndex": 2,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Kidney, not the Renal artery.",
-          "Incorrect—the structure described is the Kidney, not the Renal vein.",
-          "Correct—this is the Kidney.",
-          "Incorrect—the structure described is the Kidney, not the Renal pyramid."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-cortex",
-        "term": "Renal cortex",
-        "prompt": "The outer region of the kidney, containing the filtering units called nephrons.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal cortex",
-          "Renal pyramid",
-          "Renal vein",
-          "Renal artery"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Renal cortex.",
-          "Incorrect—the structure described is the Renal cortex, not the Renal pyramid.",
-          "Incorrect—the structure described is the Renal cortex, not the Renal vein.",
-          "Incorrect—the structure described is the Renal cortex, not the Renal artery."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-medulla",
-        "term": "Renal medulla",
-        "prompt": "The inner region of the kidney, containing renal pyramids that concentrate urine.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal medulla",
-          "Ureter",
-          "Kidney",
-          "Renal cortex"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Renal medulla.",
-          "Incorrect—the structure described is the Renal medulla, not the Ureter.",
-          "Incorrect—the structure described is the Renal medulla, not the Kidney.",
-          "Incorrect—the structure described is the Renal medulla, not the Renal cortex."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-pyramid",
-        "term": "Renal pyramid",
-        "prompt": "A cone-shaped structure in the renal medulla that channels urine toward the renal pelvis.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal pyramid",
-          "Ureter",
-          "Renal pelvis",
-          "Renal artery"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Renal pyramid.",
-          "Incorrect—the structure described is the Renal pyramid, not the Ureter.",
-          "Incorrect—the structure described is the Renal pyramid, not the Renal pelvis.",
-          "Incorrect—the structure described is the Renal pyramid, not the Renal artery."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-pelvis",
-        "term": "Renal pelvis",
-        "prompt": "The funnel-shaped structure that collects urine from the renal pyramids before it drains into the ureter.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal pyramid",
-          "Ureter",
-          "Adrenal gland",
-          "Renal pelvis"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Renal pelvis, not the Renal pyramid.",
-          "Incorrect—the structure described is the Renal pelvis, not the Ureter.",
-          "Incorrect—the structure described is the Renal pelvis, not the Adrenal gland.",
-          "Correct—this is the Renal pelvis."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-ureter",
-        "term": "Ureter",
-        "prompt": "The tube that carries urine from the kidney to the bladder.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal pyramid",
-          "Kidney",
-          "Renal artery",
-          "Ureter"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Ureter, not the Renal pyramid.",
-          "Incorrect—the structure described is the Ureter, not the Kidney.",
-          "Incorrect—the structure described is the Ureter, not the Renal artery.",
-          "Correct—this is the Ureter."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-artery",
-        "term": "Renal artery",
-        "prompt": "The vessel that carries oxygenated blood from the aorta into the kidney.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal medulla",
-          "Renal artery",
-          "Adrenal gland",
-          "Renal cortex"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Renal artery, not the Renal medulla.",
-          "Correct—this is the Renal artery.",
-          "Incorrect—the structure described is the Renal artery, not the Adrenal gland.",
-          "Incorrect—the structure described is the Renal artery, not the Renal cortex."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-renal-vein",
-        "term": "Renal vein",
-        "prompt": "The vessel that carries filtered blood from the kidney to the inferior vena cava.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal cortex",
-          "Renal vein",
-          "Renal medulla",
-          "Ureter"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Renal vein, not the Renal cortex.",
-          "Correct—this is the Renal vein.",
-          "Incorrect—the structure described is the Renal vein, not the Renal medulla.",
-          "Incorrect—the structure described is the Renal vein, not the Ureter."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-kidneys-adrenal-gland",
-        "term": "Adrenal gland",
-        "prompt": "An endocrine gland sitting atop each kidney that produces hormones such as cortisol and adrenaline.",
-        "concept": "Kidneys",
-        "options": [
-          "Renal artery",
-          "Adrenal gland",
-          "Ureter",
-          "Kidney"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Adrenal gland, not the Renal artery.",
-          "Correct—this is the Adrenal gland.",
-          "Incorrect—the structure described is the Adrenal gland, not the Ureter.",
-          "Incorrect—the structure described is the Adrenal gland, not the Kidney."
-        ]
-      },
       {
         "id": "af-abdomen-pelvis-pelvis-ilium",
         "imageUrl": "/images/anatomy/bones/pelvic-ilium.png",
@@ -3441,7 +2153,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Pubis.",
           "Incorrect—the structure described is the Pubis, not the Sacroiliac joint.",
           "Incorrect—the structure described is the Pubis, not the Ischium."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/pelvic-pubis.png"
       },
       {
         "id": "af-abdomen-pelvis-pelvis-acetabulum",
@@ -3482,63 +2195,6 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Obturator foramen, not the Ischium.",
           "Incorrect—the structure described is the Obturator foramen, not the Ilium."
         ]
-      },
-      {
-        "id": "af-abdomen-pelvis-pelvis-pubic-symphysis",
-        "term": "Pubic symphysis",
-        "prompt": "The cartilaginous joint that unites the left and right pubic bones at the midline.",
-        "concept": "Pelvis",
-        "options": [
-          "Acetabulum",
-          "Ischium",
-          "Ilium",
-          "Pubic symphysis"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Pubic symphysis, not the Acetabulum.",
-          "Incorrect—the structure described is the Pubic symphysis, not the Ischium.",
-          "Incorrect—the structure described is the Pubic symphysis, not the Ilium.",
-          "Correct—this is the Pubic symphysis."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-pelvis-sacroiliac-joint",
-        "term": "Sacroiliac joint",
-        "prompt": "The joint between the sacrum and the ilium that transfers weight between the spine and lower limbs.",
-        "concept": "Pelvis",
-        "options": [
-          "Ilium",
-          "Ischial tuberosity",
-          "Acetabulum",
-          "Sacroiliac joint"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Sacroiliac joint, not the Ilium.",
-          "Incorrect—the structure described is the Sacroiliac joint, not the Ischial tuberosity.",
-          "Incorrect—the structure described is the Sacroiliac joint, not the Acetabulum.",
-          "Correct—this is the Sacroiliac joint."
-        ]
-      },
-      {
-        "id": "af-abdomen-pelvis-pelvis-ischial-tuberosity",
-        "term": "Ischial tuberosity",
-        "prompt": "The bony prominence of the ischium that bears weight when sitting, also called the 'sit bone.'",
-        "concept": "Pelvis",
-        "options": [
-          "Pubic symphysis",
-          "Ischial tuberosity",
-          "Ilium",
-          "Obturator foramen"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Ischial tuberosity, not the Pubic symphysis.",
-          "Correct—this is the Ischial tuberosity.",
-          "Incorrect—the structure described is the Ischial tuberosity, not the Ilium.",
-          "Incorrect—the structure described is the Ischial tuberosity, not the Obturator foramen."
-        ]
       }
     ]
   },
@@ -3574,7 +2230,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Frontal bone, not the Nasal bone.",
           "Incorrect—the structure described is the Frontal bone, not the Mandible.",
           "Incorrect—the structure described is the Frontal bone, not the Parietal bone."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/frontal-bone.png"
       },
       {
         "id": "af-head-neck-skull-bones-parietal-bone",
@@ -3593,7 +2250,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Parietal bone, not the Zygomatic bone.",
           "Correct—this is the Parietal bone.",
           "Incorrect—the structure described is the Parietal bone, not the Occipital bone."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/parietal-bone.png"
       },
       {
         "id": "af-head-neck-skull-bones-temporal-bone",
@@ -3612,7 +2270,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Temporal bone, not the Maxilla.",
           "Incorrect—the structure described is the Temporal bone, not the Occipital bone.",
           "Correct—this is the Temporal bone."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/temporal-bone.png"
       },
       {
         "id": "af-head-neck-skull-bones-occipital-bone",
@@ -3631,7 +2290,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Occipital bone, not the Zygomatic bone.",
           "Incorrect—the structure described is the Occipital bone, not the Mandible.",
           "Incorrect—the structure described is the Occipital bone, not the Parietal bone."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/occipital-bone.png"
       },
       {
         "id": "af-head-neck-skull-bones-sphenoid",
@@ -3650,26 +2310,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Sphenoid.",
           "Incorrect—the structure described is the Sphenoid, not the Mandible.",
           "Incorrect—the structure described is the Sphenoid, not the Parietal bone."
-        ]
-      },
-      {
-        "id": "af-head-neck-skull-bones-ethmoid",
-        "term": "Ethmoid",
-        "prompt": "A small bone between the nasal cavity and the orbits that contributes to the nasal septum and orbital walls.",
-        "concept": "Skull Bones",
-        "options": [
-          "Parietal bone",
-          "Ethmoid",
-          "Frontal bone",
-          "Occipital bone"
         ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Ethmoid, not the Parietal bone.",
-          "Correct—this is the Ethmoid.",
-          "Incorrect—the structure described is the Ethmoid, not the Frontal bone.",
-          "Incorrect—the structure described is the Ethmoid, not the Occipital bone."
-        ]
+        "imageUrl": "/images/anatomy/bones/sphenoid.png"
       },
       {
         "id": "af-head-neck-skull-bones-maxilla",
@@ -3688,7 +2330,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Maxilla, not the Occipital bone.",
           "Incorrect—the structure described is the Maxilla, not the Sphenoid.",
           "Correct—this is the Maxilla."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/maxilla.png"
       },
       {
         "id": "af-head-neck-skull-bones-mandible",
@@ -3707,7 +2350,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Mandible, not the Occipital bone.",
           "Incorrect—the structure described is the Mandible, not the Zygomatic bone.",
           "Correct—this is the Mandible."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/mandible.png"
       },
       {
         "id": "af-head-neck-skull-bones-zygomatic-bone",
@@ -3726,7 +2370,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Zygomatic bone, not the Nasal bone.",
           "Incorrect—the structure described is the Zygomatic bone, not the Occipital bone.",
           "Correct—this is the Zygomatic bone."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/zygomatic-bone.png"
       },
       {
         "id": "af-head-neck-skull-bones-nasal-bone",
@@ -3745,7 +2390,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Correct—this is the Nasal bone.",
           "Incorrect—the structure described is the Nasal bone, not the Temporal bone.",
           "Incorrect—the structure described is the Nasal bone, not the Sphenoid."
-        ]
+        ],
+        "imageUrl": "/images/anatomy/bones/nasal-bone.png"
       },
       {
         "id": "af-head-neck-landmarks-foramen-magnum",
@@ -3764,140 +2410,8 @@ export const anatomyFlashcardSections: AnatomyFlashcardSection[] = [
           "Incorrect—the structure described is the Foramen magnum, not the Foramen ovale.",
           "Incorrect—the structure described is the Foramen magnum, not the Jugular foramen.",
           "Incorrect—the structure described is the Foramen magnum, not the Optic canal."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-optic-canal",
-        "term": "Optic canal",
-        "prompt": "The opening in the sphenoid bone through which the optic nerve and ophthalmic artery pass.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Optic canal",
-          "Superior orbital fissure",
-          "Foramen ovale",
-          "Foramen magnum"
         ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Optic canal.",
-          "Incorrect—the structure described is the Optic canal, not the Superior orbital fissure.",
-          "Incorrect—the structure described is the Optic canal, not the Foramen ovale.",
-          "Incorrect—the structure described is the Optic canal, not the Foramen magnum."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-superior-orbital-fissure",
-        "term": "Superior orbital fissure",
-        "prompt": "A gap between the sphenoid bone's wings that transmits nerves and vessels to structures around the eye.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Superior orbital fissure",
-          "Foramen magnum",
-          "Optic canal",
-          "Foramen rotundum"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Superior orbital fissure.",
-          "Incorrect—the structure described is the Superior orbital fissure, not the Foramen magnum.",
-          "Incorrect—the structure described is the Superior orbital fissure, not the Optic canal.",
-          "Incorrect—the structure described is the Superior orbital fissure, not the Foramen rotundum."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-foramen-ovale",
-        "term": "Foramen ovale",
-        "prompt": "An opening in the sphenoid bone that transmits the mandibular branch of the trigeminal nerve.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Foramen ovale",
-          "Optic canal",
-          "Foramen magnum",
-          "External acoustic meatus"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Foramen ovale.",
-          "Incorrect—the structure described is the Foramen ovale, not the Optic canal.",
-          "Incorrect—the structure described is the Foramen ovale, not the Foramen magnum.",
-          "Incorrect—the structure described is the Foramen ovale, not the External acoustic meatus."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-foramen-rotundum",
-        "term": "Foramen rotundum",
-        "prompt": "An opening in the sphenoid bone that transmits the maxillary branch of the trigeminal nerve.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Foramen rotundum",
-          "Optic canal",
-          "Foramen ovale",
-          "External acoustic meatus"
-        ],
-        "correctIndex": 0,
-        "optionExplanations": [
-          "Correct—this is the Foramen rotundum.",
-          "Incorrect—the structure described is the Foramen rotundum, not the Optic canal.",
-          "Incorrect—the structure described is the Foramen rotundum, not the Foramen ovale.",
-          "Incorrect—the structure described is the Foramen rotundum, not the External acoustic meatus."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-jugular-foramen",
-        "term": "Jugular foramen",
-        "prompt": "An opening between the temporal and occipital bones that transmits the internal jugular vein and several cranial nerves.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Foramen rotundum",
-          "Optic canal",
-          "Foramen ovale",
-          "Jugular foramen"
-        ],
-        "correctIndex": 3,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Jugular foramen, not the Foramen rotundum.",
-          "Incorrect—the structure described is the Jugular foramen, not the Optic canal.",
-          "Incorrect—the structure described is the Jugular foramen, not the Foramen ovale.",
-          "Correct—this is the Jugular foramen."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-carotid-canal",
-        "term": "Carotid canal",
-        "prompt": "A canal in the temporal bone through which the internal carotid artery enters the skull.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Foramen ovale",
-          "Carotid canal",
-          "Foramen rotundum",
-          "Foramen magnum"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the Carotid canal, not the Foramen ovale.",
-          "Correct—this is the Carotid canal.",
-          "Incorrect—the structure described is the Carotid canal, not the Foramen rotundum.",
-          "Incorrect—the structure described is the Carotid canal, not the Foramen magnum."
-        ]
-      },
-      {
-        "id": "af-head-neck-landmarks-external-acoustic-meatus",
-        "term": "External acoustic meatus",
-        "prompt": "The canal in the temporal bone leading from the outer ear to the eardrum.",
-        "concept": "Important Landmarks",
-        "options": [
-          "Carotid canal",
-          "External acoustic meatus",
-          "Foramen magnum",
-          "Foramen ovale"
-        ],
-        "correctIndex": 1,
-        "optionExplanations": [
-          "Incorrect—the structure described is the External acoustic meatus, not the Carotid canal.",
-          "Correct—this is the External acoustic meatus.",
-          "Incorrect—the structure described is the External acoustic meatus, not the Foramen magnum.",
-          "Incorrect—the structure described is the External acoustic meatus, not the Foramen ovale."
-        ]
+        "imageUrl": "/images/anatomy/bones/foramen-magnum.png"
       }
     ]
   }

@@ -22,7 +22,7 @@ export const tracks: Track[] = [
   { id: 'mcat', name: 'MCAT', icon: 'clipboard-outline', meta: '4 Sections · 90 Lessons', bg: 'rgba(124, 58, 237, 0.12)', fg: '#7C3AED' },
   { id: 'medical-school', name: 'Medical School', icon: 'school-outline', meta: 'Coming soon', bg: 'rgba(15, 139, 141, 0.12)', fg: '#0F8B8D' },
   { id: 'nursing', name: 'Nursing', icon: 'heart-outline', meta: '11 Topics', bg: 'rgba(219, 39, 119, 0.12)', fg: '#DB2777' },
-  { id: 'anatomy', name: 'Anatomy', icon: 'body-outline', meta: '7 Sections · 191 Cards', bg: 'rgba(225, 29, 72, 0.12)', fg: '#E11D48' },
+  { id: 'anatomy', name: 'Anatomy', icon: 'body-outline', meta: '7 Sections · 111 Cards', bg: 'rgba(225, 29, 72, 0.12)', fg: '#E11D48' },
   { id: 'pharmacology', name: 'Pharmacology', icon: 'medkit-outline', meta: 'Coming soon', bg: 'rgba(79, 70, 229, 0.12)', fg: '#4F46E5' },
   { id: 'medical-cases', name: 'Medical Cases', icon: 'pulse-outline', meta: 'Coming soon', bg: 'rgba(244, 63, 94, 0.12)', fg: '#F43F5E' },
   { id: 'usmle', name: 'USMLE', icon: 'medal-outline', meta: 'Coming soon', bg: 'rgba(217, 119, 6, 0.12)', fg: '#D97706' },

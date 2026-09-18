@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { Platform } from 'react-native';
 
 /**
  * The real backend — the same Supabase project studium-website (the web
@@ -27,6 +28,18 @@ import { createClient } from '@supabase/supabase-js';
  * URL instead of raw access/refresh tokens sitting in it, which
  * exchangeCodeForSession then swaps for a real session — safer than the
  * implicit flow's tokens-in-a-URL for a mobile deep link.
+ *
+ * `authStorage` below only matters for Expo Router's web target: on
+ * native, `Platform.OS !== 'web'` always short-circuits straight to the
+ * real AsyncStorage exactly as before (untouched — this is what every
+ * real device/emulator session this app has ever run on uses). On web,
+ * `expo start` also server-renders routes in plain Node (no `window`) —
+ * AsyncStorage's own web implementation assumes a real browser
+ * (`window.localStorage`), so calling it during that render crashed the
+ * whole server with `ReferenceError: window is not defined` before it
+ * could serve anything. A signed-out, in-memory-only stub for that one
+ * SSR case is enough — session persistence for an actual browser tab
+ * (where `window` is real) still goes through AsyncStorage untouched.
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -37,9 +50,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+const noopStorage = {
+  getItem: async () => null,
+  setItem: async () => {},
+  removeItem: async () => {},
+};
+
+const authStorage = Platform.OS !== 'web' || typeof window !== 'undefined' ? AsyncStorage : noopStorage;
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
